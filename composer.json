@@ -1,0 +1,33 @@
+{
+    "name": "joshuaadumchimma/woocommerce-s3-export-pro",
+    "description": "Professional WooCommerce CSV export automation with S3 upload capabilities. Perfect for businesses needing automated data exports to Amazon S3 with zero technical knowledge required.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Joshua C. Adumchimma",
+            "email": "joshua@example.com",
+            "homepage": "https://github.com/joshuaadumchimma"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "aws/aws-sdk-php": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "WC_S3_Export_Pro\\": "includes/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    },
+    "keywords": [
+        "wordpress",
+        "woocommerce",
+        "s3",
+        "export",
+        "automation",
+        "csv"
+    ]
+}

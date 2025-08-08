@@ -1,0 +1,460 @@
+<?php
+namespace WC_S3_Export_Pro;
+
+/**
+ * Main Export Manager Class
+ * 
+ * Orchestrates all export functionality including S3 uploads, automation, monitoring, and recovery.
+ */
+class Export_Manager {
+    
+    /**
+     * Plugin instance
+     */
+    private static $instance = null;
+    
+    /**
+     * S3 Uploader instance
+     */
+    private $s3_uploader;
+    
+    /**
+     * Automation Manager instance
+     */
+    private $automation_manager;
+    
+    /**
+     * Monitoring instance
+     */
+    private $monitoring;
+    
+    /**
+     * Settings instance
+     */
+    private $settings;
+    
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->init_hooks();
+        $this->load_dependencies();
+        $this->init_components();
+    }
+    
+    /**
+     * Initialize hooks
+     */
+    private function init_hooks() {
+        // Admin hooks
+        add_action('admin_menu', array($this, 'add_admin_menu'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
+        
+        // Cron hooks
+        add_action('wc_s3_export_health_check', array($this, 'run_health_check'));
+        add_action('wc_s3_export_automation', array($this, 'run_export_automation'));
+        
+        // AJAX hooks
+        add_action('wp_ajax_wc_s3_test_s3_connection', array($this, 'ajax_test_s3_connection'));
+        add_action('wp_ajax_wc_s3_run_manual_export', array($this, 'ajax_run_manual_export'));
+        add_action('wp_ajax_wc_s3_get_export_status', array($this, 'ajax_get_export_status'));
+        add_action('wp_ajax_wc_s3_save_s3_config', array($this, 'ajax_save_s3_config'));
+        add_action('wp_ajax_wc_s3_save_export_settings', array($this, 'ajax_save_export_settings'));
+        add_action('wp_ajax_wc_s3_setup_automation', array($this, 'ajax_setup_automation'));
+        add_action('wp_ajax_wc_s3_get_log_content', array($this, 'ajax_get_log_content'));
+        
+        // WP-CLI commands
+        if (defined('WP_CLI') && WP_CLI) {
+            $this->register_cli_commands();
+        }
+    }
+    
+    /**
+     * Load dependencies
+     */
+    private function load_dependencies() {
+        // Load AWS SDK if available (optional dependency)
+        if (!class_exists('Aws\S3\S3Client')) {
+            $aws_sdk_path = WC_S3_EXPORT_PRO_PLUGIN_DIR . 'vendor/aws/aws-sdk-php/src/functions.php';
+            if (file_exists($aws_sdk_path)) {
+                require_once $aws_sdk_path;
+            } else {
+                // Log that AWS SDK is not available but continue
+                error_log('WC S3 Export Pro: AWS SDK not found. S3 functionality will be disabled.');
+            }
+        }
+    }
+    
+    /**
+     * Initialize components
+     */
+    private function init_components() {
+        $this->settings = new Settings();
+        $this->s3_uploader = new S3_Uploader();
+        $this->automation_manager = new Automation_Manager();
+        $this->monitoring = new Monitoring();
+    }
+    
+    /**
+     * Register WP-CLI commands
+     */
+    private function register_cli_commands() {
+        \WP_CLI::add_command('wc-s3 export_orders', array($this, 'cli_export_orders'));
+        \WP_CLI::add_command('wc-s3 backfill_export', array($this, 'cli_backfill_export'));
+        \WP_CLI::add_command('wc-s3 validate_export_system', array($this, 'cli_validate_export_system'));
+        \WP_CLI::add_command('wc-s3 export_status', array($this, 'cli_export_status'));
+        \WP_CLI::add_command('wc-s3 reset_export_retries', array($this, 'cli_reset_export_retries'));
+        \WP_CLI::add_command('wc-s3 check_scheduler', array($this, 'cli_check_scheduler'));
+        \WP_CLI::add_command('wc-s3 fix_export_automation', array($this, 'cli_fix_export_automation'));
+        \WP_CLI::add_command('wc-s3 simple_fix_export_automation', array($this, 'cli_simple_fix_export_automation'));
+        \WP_CLI::add_command('wc-s3 setup_s3_config', array($this, 'cli_setup_s3_config'));
+        \WP_CLI::add_command('wc-s3 check_s3_config', array($this, 'cli_check_s3_config'));
+        \WP_CLI::add_command('wc-s3 monitor_exports', array($this, 'cli_monitor_exports'));
+        \WP_CLI::add_command('wc-s3 emergency_recovery', array($this, 'cli_emergency_recovery'));
+    }
+    
+    /**
+     * Add admin menu
+     */
+    public function add_admin_menu() {
+        add_submenu_page(
+            'woocommerce',
+            'WC S3 Export Pro',
+            'S3 Export Pro',
+            'manage_woocommerce',
+            'wc-s3-export-pro',
+            array($this, 'admin_page')
+        );
+    }
+    
+    /**
+     * Enqueue admin scripts
+     */
+    public function enqueue_admin_scripts($hook) {
+        if ('woocommerce_page_wc-s3-export-pro' !== $hook) {
+            return;
+        }
+        
+        wp_enqueue_script(
+            'wc-s3-export-pro-admin',
+            WC_S3_EXPORT_PRO_PLUGIN_URL . 'assets/js/admin.js',
+            array('jquery'),
+            WC_S3_EXPORT_PRO_VERSION,
+            true
+        );
+        
+        wp_enqueue_style(
+            'wc-s3-export-pro-admin',
+            WC_S3_EXPORT_PRO_PLUGIN_URL . 'assets/css/admin.css',
+            array(),
+            WC_S3_EXPORT_PRO_VERSION
+        );
+        
+        wp_localize_script('wc-s3-export-pro-admin', 'wcS3ExportPro', array(
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('wc_s3_export_pro_nonce'),
+            'strings' => array(
+                'testing' => __('Testing S3 connection...', 'wc-s3-export-pro'),
+                'success' => __('Success!', 'wc-s3-export-pro'),
+                'error' => __('Error!', 'wc-s3-export-pro'),
+                'running' => __('Running export...', 'wc-s3-export-pro'),
+            )
+        ));
+    }
+    
+    /**
+     * Get S3 Uploader instance
+     */
+    public function get_s3_uploader() {
+        return $this->s3_uploader;
+    }
+    
+    /**
+     * Admin page
+     */
+    public function admin_page() {
+        include WC_S3_EXPORT_PRO_PLUGIN_DIR . 'admin/views/admin-page.php';
+    }
+    
+    /**
+     * Run health check
+     */
+    public function run_health_check() {
+        $this->monitoring->run_health_check();
+    }
+    
+    /**
+     * Run export automation
+     */
+    public function run_export_automation() {
+        $this->automation_manager->run_export_automation();
+    }
+    
+    /**
+     * AJAX: Test S3 connection
+     */
+    public function ajax_test_s3_connection() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $result = $this->s3_uploader->test_connection();
+        
+        wp_send_json($result);
+    }
+    
+    /**
+     * AJAX: Run manual export
+     */
+    public function ajax_run_manual_export() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : date('Y-m-d');
+        $result = $this->automation_manager->run_manual_export($date);
+        
+        wp_send_json($result);
+    }
+    
+    /**
+     * AJAX: Get export status
+     */
+    public function ajax_get_export_status() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $status = $this->monitoring->get_export_status();
+        
+        wp_send_json($status);
+    }
+    
+    /**
+     * AJAX: Save S3 configuration
+     */
+    public function ajax_save_s3_config() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $config = array(
+            'access_key' => sanitize_text_field($_POST['s3_access_key'] ?? ''),
+            'secret_key' => sanitize_text_field($_POST['s3_secret_key'] ?? ''),
+            'region' => sanitize_text_field($_POST['s3_region'] ?? ''),
+            'bucket' => sanitize_text_field($_POST['s3_bucket'] ?? '')
+        );
+        
+        $result = $this->settings->update_s3_config($config);
+        
+        if ($result) {
+            wp_send_json_success(array('message' => 'S3 configuration saved successfully'));
+        } else {
+            wp_send_json_error(array('message' => 'Failed to save S3 configuration'));
+        }
+    }
+    
+    /**
+     * AJAX: Save export settings
+     */
+    public function ajax_save_export_settings() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $settings = array(
+            'export_frequency' => sanitize_text_field($_POST['export_frequency'] ?? 'daily'),
+            'export_time' => sanitize_text_field($_POST['export_time'] ?? '02:00'),
+            'export_types' => array_map('sanitize_text_field', $_POST['export_types'] ?? array())
+        );
+        
+        $result = $this->settings->update_settings($settings);
+        
+        if ($result) {
+            wp_send_json_success(array('message' => 'Export settings saved successfully'));
+        } else {
+            wp_send_json_error(array('message' => 'Failed to save export settings'));
+        }
+    }
+    
+    /**
+     * AJAX: Setup automation
+     */
+    public function ajax_setup_automation() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $result = $this->automation_manager->setup_automation();
+        
+        if ($result['success']) {
+            wp_send_json_success(array('message' => $result['message']));
+        } else {
+            wp_send_json_error(array('message' => $result['message']));
+        }
+    }
+    
+    /**
+     * AJAX: Get log content
+     */
+    public function ajax_get_log_content() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $recent_logs = $this->monitoring->get_recent_logs(50);
+        
+        if (!empty($recent_logs)) {
+            $content = implode("\n", $recent_logs);
+            wp_send_json_success(array('content' => $content));
+        } else {
+            wp_send_json_success(array('content' => 'No log entries found.'));
+        }
+    }
+    
+    /**
+     * WP-CLI: Export orders
+     */
+    public function cli_export_orders($args, $assoc_args) {
+        $date_param = $args[0] ?? null;
+        $this->automation_manager->run_export_automation($date_param);
+        \WP_CLI::success("Export finished for date: " . ($date_param ?: date('Y-m-d')));
+    }
+    
+    /**
+     * WP-CLI: Backfill export
+     */
+    public function cli_backfill_export($args, $assoc_args) {
+        if (empty($args[0])) {
+            \WP_CLI::error("Please provide a date in Y-m-d format (e.g., 2025-07-29)");
+            return;
+        }
+        
+        $target_date = $args[0];
+        
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $target_date)) {
+            \WP_CLI::error("Invalid date format. Use Y-m-d format (e.g., 2025-07-29)");
+            return;
+        }
+        
+        \WP_CLI::line("Starting manual export for date: $target_date");
+        
+        $success_count = $this->automation_manager->run_manual_export($target_date);
+        
+        if ($success_count > 0) {
+            \WP_CLI::success("Manual export completed for $target_date - $success_count files created and uploaded to S3");
+        } else {
+            \WP_CLI::error("Manual export failed for $target_date - no files were created");
+        }
+    }
+    
+    /**
+     * WP-CLI: Validate export system
+     */
+    public function cli_validate_export_system($args, $assoc_args) {
+        $issues = $this->monitoring->validate_export_system();
+        
+        if (empty($issues)) {
+            \WP_CLI::success("Export system validation passed - all components working correctly");
+        } else {
+            \WP_CLI::error("Export system issues found:");
+            foreach ($issues as $issue) {
+                \WP_CLI::line("  - $issue");
+            }
+        }
+    }
+    
+    /**
+     * WP-CLI: Export status
+     */
+    public function cli_export_status($args, $assoc_args) {
+        $status = $this->monitoring->get_export_status();
+        
+        \WP_CLI::line("=== EXPORT STATUS ===");
+        \WP_CLI::line("Last export: " . ($status['last_export'] ?: 'Never'));
+        \WP_CLI::line("S3 connection: " . ($status['s3_connected'] ? '✓ Connected' : '❌ Not connected'));
+        \WP_CLI::line("Automation status: " . ($status['automation_enabled'] ? '✓ Enabled' : '❌ Disabled'));
+        \WP_CLI::line("Pending jobs: " . $status['pending_jobs']);
+    }
+    
+    /**
+     * WP-CLI: Reset export retries
+     */
+    public function cli_reset_export_retries($args, $assoc_args) {
+        $this->automation_manager->reset_retry_flags();
+        \WP_CLI::success("Export retry flags cleared");
+    }
+    
+    /**
+     * WP-CLI: Check scheduler
+     */
+    public function cli_check_scheduler($args, $assoc_args) {
+        $this->monitoring->cli_check_scheduler();
+    }
+    
+    /**
+     * WP-CLI: Fix export automation
+     */
+    public function cli_fix_export_automation($args, $assoc_args) {
+        $this->automation_manager->cli_fix_export_automation();
+    }
+    
+    /**
+     * WP-CLI: Simple fix export automation
+     */
+    public function cli_simple_fix_export_automation($args, $assoc_args) {
+        $this->automation_manager->cli_simple_fix_export_automation();
+    }
+    
+    /**
+     * WP-CLI: Setup S3 config
+     */
+    public function cli_setup_s3_config($args, $assoc_args) {
+        $this->settings->cli_setup_s3_config($args, $assoc_args);
+    }
+    
+    /**
+     * WP-CLI: Check S3 config
+     */
+    public function cli_check_s3_config($args, $assoc_args) {
+        $this->s3_uploader->cli_check_s3_config();
+    }
+    
+    /**
+     * WP-CLI: Monitor exports
+     */
+    public function cli_monitor_exports($args, $assoc_args) {
+        $this->monitoring->cli_monitor_exports();
+    }
+    
+    /**
+     * WP-CLI: Emergency recovery
+     */
+    public function cli_emergency_recovery($args, $assoc_args) {
+        $this->automation_manager->cli_emergency_recovery($args, $assoc_args);
+    }
+    
+    /**
+     * Get plugin instance
+     */
+    public static function get_instance() {
+        if (null === self::$instance) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+} 

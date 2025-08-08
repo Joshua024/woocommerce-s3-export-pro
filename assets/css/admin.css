@@ -1,0 +1,448 @@
+/* WooCommerce S3 Export Pro - Admin Styles */
+
+.wc-s3-export-pro-wrap {
+    max-width: 1200px;
+    margin: 20px auto;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+}
+
+/* Header */
+.wc-s3-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.wc-s3-header h1 {
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.wc-s3-header p {
+    margin: 1rem 0 0 0;
+    text-align: center;
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+/* Status Cards */
+.wc-s3-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.wc-s3-status-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    border-left: 4px solid #667eea;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wc-s3-status-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+
+.wc-s3-status-card.success {
+    border-left-color: #10b981;
+}
+
+.wc-s3-status-card.warning {
+    border-left-color: #f59e0b;
+}
+
+.wc-s3-status-card.error {
+    border-left-color: #ef4444;
+}
+
+.wc-s3-status-card h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.wc-s3-status-card .status-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.wc-s3-status-card .status-indicator.success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.wc-s3-status-card .status-indicator.warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.wc-s3-status-card .status-indicator.error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.wc-s3-status-card .status-indicator::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+.wc-s3-status-card .status-indicator.success::before {
+    background: #10b981;
+}
+
+.wc-s3-status-card .status-indicator.warning::before {
+    background: #f59e0b;
+}
+
+.wc-s3-status-card .status-indicator.error::before {
+    background: #ef4444;
+}
+
+/* Action Buttons */
+.wc-s3-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.wc-s3-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    min-height: 44px;
+}
+
+.wc-s3-btn.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.wc-s3-btn.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.wc-s3-btn.secondary {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.wc-s3-btn.secondary:hover {
+    background: #e5e7eb;
+    transform: translateY(-1px);
+}
+
+.wc-s3-btn.success {
+    background: #10b981;
+    color: white;
+}
+
+.wc-s3-btn.success:hover {
+    background: #059669;
+    transform: translateY(-1px);
+}
+
+.wc-s3-btn.warning {
+    background: #f59e0b;
+    color: white;
+}
+
+.wc-s3-btn.warning:hover {
+    background: #d97706;
+    transform: translateY(-1px);
+}
+
+.wc-s3-btn.error {
+    background: #ef4444;
+    color: white;
+}
+
+.wc-s3-btn.error:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+.wc-s3-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Forms */
+.wc-s3-form {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+}
+
+.wc-s3-form h3 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.wc-s3-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.wc-s3-form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.wc-s3-form-group input[type="text"],
+.wc-s3-form-group input[type="password"],
+.wc-s3-form-group input[type="email"],
+.wc-s3-form-group select,
+.wc-s3-form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wc-s3-form-group input:focus,
+.wc-s3-form-group select:focus,
+.wc-s3-form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Progress Bars */
+.wc-s3-progress {
+    background: #f3f4f6;
+    border-radius: 8px;
+    height: 8px;
+    overflow: hidden;
+    margin: 1rem 0;
+}
+
+.wc-s3-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    transition: width 0.3s ease;
+}
+
+/* Logs */
+.wc-s3-logs {
+    background: #1f2937;
+    color: #f9fafb;
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 1rem;
+}
+
+.wc-s3-logs .log-entry {
+    margin-bottom: 0.5rem;
+    padding: 0.25rem 0;
+}
+
+.wc-s3-logs .log-entry.success {
+    color: #10b981;
+}
+
+.wc-s3-logs .log-entry.warning {
+    color: #f59e0b;
+}
+
+.wc-s3-logs .log-entry.error {
+    color: #ef4444;
+}
+
+/* Notifications */
+.wc-s3-notification {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border-left: 4px solid;
+}
+
+.wc-s3-notification.success {
+    background: #d1fae5;
+    color: #065f46;
+    border-left-color: #10b981;
+}
+
+.wc-s3-notification.warning {
+    background: #fef3c7;
+    color: #92400e;
+    border-left-color: #f59e0b;
+}
+
+.wc-s3-notification.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border-left-color: #ef4444;
+}
+
+.wc-s3-notification.info {
+    background: #dbeafe;
+    color: #1e40af;
+    border-left-color: #3b82f6;
+}
+
+/* Loading States */
+.wc-s3-loading {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f4f6;
+    border-top: 2px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 0.5rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .wc-s3-status-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .wc-s3-actions {
+        grid-template-columns: 1fr;
+    }
+    
+    .wc-s3-header h1 {
+        font-size: 2rem;
+    }
+    
+    .wc-s3-form {
+        padding: 1.5rem;
+    }
+}
+
+/* WordPress Admin Integration */
+.wc-s3-export-pro-wrap .wrap {
+    margin: 0;
+}
+
+.wc-s3-export-pro-wrap .notice {
+    margin: 1rem 0;
+}
+
+/* Custom WordPress Admin Styles */
+.wc-s3-export-pro-wrap .nav-tab-wrapper {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #d1d5db;
+}
+
+.wc-s3-export-pro-wrap .nav-tab {
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    padding: 0.75rem 1.5rem;
+    margin-right: 0.5rem;
+    text-decoration: none;
+    color: #374151;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.wc-s3-export-pro-wrap .nav-tab:hover {
+    background: #f3f4f6;
+    color: #1f2937;
+}
+
+.wc-s3-export-pro-wrap .nav-tab.nav-tab-active {
+    background: white;
+    color: #667eea;
+    border-bottom: 2px solid #667eea;
+}
+
+/* Tooltips */
+.wc-s3-tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.wc-s3-tooltip .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: #1f2937;
+    color: white;
+    text-align: center;
+    border-radius: 6px;
+    padding: 0.5rem;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.wc-s3-tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Success Animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.wc-s3-fade-in {
+    animation: fadeInUp 0.5s ease-out;
+} 
