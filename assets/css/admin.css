@@ -837,17 +837,19 @@
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(5px);
+    animation: modalFadeIn 0.3s ease-out;
 }
 
 .wc-s3-modal-content {
     background-color: #fefefe;
     margin: 5% auto;
     padding: 0;
-    border-radius: 12px;
+    border-radius: 16px;
     width: 90%;
     max-width: 600px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
     animation: modalSlideIn 0.3s ease-out;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .wc-s3-modal-large {
@@ -858,36 +860,69 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem 2rem;
+    padding: 1.75rem 2rem;
     border-bottom: 1px solid #e5e7eb;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border-radius: 12px 12px 0 0;
+    border-radius: 16px 16px 0 0;
+    position: relative;
+}
+
+.wc-s3-modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    border-radius: 16px 16px 0 0;
+    pointer-events: none;
 }
 
 .wc-s3-modal-header h3 {
     margin: 0;
     font-size: 1.5rem;
     font-weight: 600;
+    position: relative;
+    z-index: 1;
 }
 
-.wc-s3-modal-close {
-    color: white;
-    font-size: 2rem;
-    font-weight: bold;
+.wc-s3-modal-close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    line-height: 1;
-    transition: opacity 0.2s ease;
+    transition: all 0.2s ease;
+    color: white;
+    position: relative;
+    z-index: 1;
 }
 
-.wc-s3-modal-close:hover {
-    opacity: 0.7;
+.wc-s3-modal-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.wc-s3-modal-close-btn:active {
+    transform: scale(0.95);
+}
+
+.wc-s3-modal-close-btn svg {
+    width: 20px;
+    height: 20px;
 }
 
 .wc-s3-modal-body {
     padding: 2rem;
     max-height: 70vh;
     overflow-y: auto;
+    background: #ffffff;
 }
 
 .wc-s3-modal-actions {
@@ -899,23 +934,74 @@
     border-top: 1px solid #e5e7eb;
 }
 
+/* Enhanced Checkbox Styles */
+.wc-s3-checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.75rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+    margin: 0;
+}
+
+.wc-s3-checkbox-label:hover {
+    background: #f3f4f6;
+}
+
+.wc-s3-checkbox-label input[type="checkbox"] {
+    margin-right: 0.75rem;
+    width: 18px;
+    height: 18px;
+}
+
+.wc-s3-checkbox-label .checkmark {
+    position: relative;
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    margin-right: 0.75rem;
+    transition: all 0.2s ease;
+    border: 2px solid #d1d5db;
+}
+
+.wc-s3-checkbox-label input[type="checkbox"]:checked + .checkmark {
+    background: #667eea;
+    border-color: #667eea;
+}
+
+.wc-s3-checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
 /* Export History Styles */
 .wc-s3-history-filters {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
+    gap: 1.5rem;
     margin-bottom: 2rem;
-    padding: 1.5rem;
-    background: #f8fafc;
-    border-radius: 8px;
+    padding: 1.75rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
     border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .wc-s3-table-container {
     background: white;
-    border-radius: 8px;
+    border-radius: 12px;
     border: 1px solid #e2e8f0;
     overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .wc-s3-table {
@@ -925,16 +1011,19 @@
 }
 
 .wc-s3-table th {
-    background: #f8fafc;
-    padding: 1rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 1.25rem 1rem;
     text-align: left;
     font-weight: 600;
     color: #374151;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 2px solid #e2e8f0;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .wc-s3-table td {
-    padding: 1rem;
+    padding: 1.25rem 1rem;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
 }
@@ -950,26 +1039,27 @@
 .wc-s3-status {
     display: inline-flex;
     align-items: center;
-    padding: 0.25rem 0.75rem;
+    padding: 0.375rem 0.875rem;
     border-radius: 20px;
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .wc-s3-status.success {
-    background: #d1fae5;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
     color: #065f46;
 }
 
 .wc-s3-status.error {
-    background: #fee2e2;
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
     color: #991b1b;
 }
 
 .wc-s3-status.warning {
-    background: #fef3c7;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
     color: #92400e;
 }
 
@@ -977,21 +1067,45 @@
     text-align: center;
     color: #6b7280;
     font-style: italic;
-    padding: 2rem;
+    padding: 3rem 2rem;
+    background: #f9fafb;
 }
 
 .wc-s3-error {
     text-align: center;
     color: #dc2626;
     font-weight: 500;
-    padding: 2rem;
+    padding: 3rem 2rem;
+    background: #fef2f2;
 }
 
 .wc-s3-loading {
     text-align: center;
     color: #6b7280;
-    padding: 2rem;
+    padding: 3rem 2rem;
+    background: #f9fafb;
 }
+
+/* Animation */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-60px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+} 
 
 /* Checkbox Group Styles */
 .wc-s3-checkbox-group {
@@ -1044,18 +1158,6 @@
     color: white;
     font-size: 10px;
     font-weight: bold;
-}
-
-/* Animation */
-@keyframes modalSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-50px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
 }
 
 /* Responsive Design */

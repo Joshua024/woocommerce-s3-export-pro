@@ -309,7 +309,11 @@ function get_data_source_options($export_type, $selected_value = '') {
         <div class="wc-s3-modal-content">
             <div class="wc-s3-modal-header">
                 <h3>📤 Manual Export</h3>
-                <span class="wc-s3-modal-close" onclick="closeManualExportModal()">&times;</span>
+                <button type="button" class="wc-s3-modal-close-btn" onclick="closeManualExportModal()" aria-label="Close modal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
             </div>
             <div class="wc-s3-modal-body">
                 <form id="manual-export-form">
@@ -344,8 +348,9 @@ function get_data_source_options($export_type, $selected_value = '') {
                     </div>
                     
                     <div class="wc-s3-form-group">
-                        <label>
+                        <label class="wc-s3-checkbox-label">
                             <input type="checkbox" id="force_export" name="force_export" value="1">
+                            <span class="checkmark"></span>
                             Force Export (Skip duplicate check)
                         </label>
                     </div>
@@ -367,7 +372,11 @@ function get_data_source_options($export_type, $selected_value = '') {
         <div class="wc-s3-modal-content wc-s3-modal-large">
             <div class="wc-s3-modal-header">
                 <h3>📊 Export History</h3>
-                <span class="wc-s3-modal-close" onclick="closeExportHistoryModal()">&times;</span>
+                <button type="button" class="wc-s3-modal-close-btn" onclick="closeExportHistoryModal()" aria-label="Close modal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
             </div>
             <div class="wc-s3-modal-body">
                 <div class="wc-s3-history-filters">
