@@ -1125,29 +1125,7 @@ document.getElementById('export-settings-form').addEventListener('submit', funct
     });
 });
 
-// Export Types Form
-document.getElementById('export-types-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    formData.append('action', 'wc_s3_save_export_types_config');
-    formData.append('nonce', wcS3ExportPro.nonce);
-    
-    fetch(wcS3ExportPro.ajaxUrl, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        showNotification(data.success ? 'success' : 'error', data.message);
-        if (data.success) {
-            setTimeout(() => location.reload(), 2000);
-        }
-    })
-    .catch(error => {
-        showNotification('error', 'Save failed: ' + error.message);
-    });
-});
+
 
 // Add Export Type
 function addExportType() {
@@ -1645,6 +1623,55 @@ function showNotification(type, message) {
 
 // Initialize drag and drop for existing export types and set up event delegation
 document.addEventListener('DOMContentLoaded', function() {
+    // Export Types Form
+    const exportTypesForm = document.getElementById('export-types-form');
+    if (exportTypesForm) {
+        console.log('Export types form found, attaching event listener');
+        exportTypesForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('Form submission started');
+            
+            const formData = new FormData(this);
+            formData.append('action', 'wc_s3_save_export_types_config');
+            formData.append('nonce', wcS3ExportPro.nonce);
+            
+            // Show loading state
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+            submitButton.textContent = '💾 Saving...';
+            submitButton.disabled = true;
+            
+            console.log('Sending form data to:', wcS3ExportPro.ajaxUrl);
+            
+            fetch(wcS3ExportPro.ajaxUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('Response received:', response);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Data received:', data);
+                showNotification(data.success ? 'success' : 'error', data.message);
+                if (data.success) {
+                    setTimeout(() => location.reload(), 2000);
+                }
+            })
+            .catch(error => {
+                console.error('Save error:', error);
+                showNotification('error', 'Save failed: ' + error.message);
+            })
+            .finally(() => {
+                // Restore button state
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
+            });
+        });
+    } else {
+        console.error('Export types form not found');
+    }
+    
     const exportTypeSections = document.querySelectorAll('.wc-s3-export-type-section');
     exportTypeSections.forEach(section => {
         const index = section.dataset.index;
