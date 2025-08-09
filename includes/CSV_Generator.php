@@ -100,42 +100,66 @@ class CSV_Generator {
                 'order_number' => $order->get_order_number(),
                 'order_number_formatted' => $order->get_order_number(),
                 'order_date' => $order->get_date_created()->format('Y-m-d H:i:s'),
-                'order_status' => $order->get_status(),
+                'status' => $order->get_status(),
+                'shipping_total' => $order->get_shipping_total(),
+                'shipping_tax_total' => $this->get_shipping_tax_total($order),
+                'fee_total' => $order->get_total_fees(),
+                'fee_tax_total' => $this->get_fee_tax_total($order),
+                'tax_total' => $order->get_total_tax(),
+                'discount_total' => $order->get_total_discount(),
+                'order_total' => $order->get_total(),
+                'refunded_total' => $order->get_total_refunded(),
+                'order_currency' => $order->get_currency(),
+                'payment_method' => $order->get_payment_method(),
+                'shipping_method' => $order->get_shipping_method(),
                 'customer_id' => $order->get_customer_id(),
                 'billing_first_name' => $order->get_billing_first_name(),
                 'billing_last_name' => $order->get_billing_last_name(),
+                'billing_full_name' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
+                'billing_company' => $order->get_billing_company(),
+                'vat_number' => $order->get_meta('_billing_vat'),
                 'billing_email' => $order->get_billing_email(),
                 'billing_phone' => $order->get_billing_phone(),
                 'billing_address_1' => $order->get_billing_address_1(),
                 'billing_address_2' => $order->get_billing_address_2(),
+                'billing_postcode' => $order->get_billing_postcode(),
                 'billing_city' => $order->get_billing_city(),
                 'billing_state' => $order->get_billing_state(),
-                'billing_postcode' => $order->get_billing_postcode(),
+                'billing_state_code' => $order->get_billing_state(),
                 'billing_country' => $order->get_billing_country(),
                 'shipping_first_name' => $order->get_shipping_first_name(),
                 'shipping_last_name' => $order->get_shipping_last_name(),
+                'shipping_full_name' => $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name(),
                 'shipping_address_1' => $order->get_shipping_address_1(),
                 'shipping_address_2' => $order->get_shipping_address_2(),
+                'shipping_postcode' => $order->get_shipping_postcode(),
                 'shipping_city' => $order->get_shipping_city(),
                 'shipping_state' => $order->get_shipping_state(),
-                'shipping_postcode' => $order->get_shipping_postcode(),
+                'shipping_state_code' => $order->get_shipping_state(),
                 'shipping_country' => $order->get_shipping_country(),
-                'payment_method' => $order->get_payment_method(),
-                'payment_method_title' => $order->get_payment_method_title(),
-                'order_total' => $order->get_total(),
-                'order_subtotal' => $order->get_subtotal(),
-                'order_tax' => $order->get_total_tax(),
-                'order_shipping' => $order->get_shipping_total(),
-                'order_discount' => $order->get_total_discount(),
-                'order_currency' => $order->get_currency(),
+                'shipping_company' => $order->get_shipping_company(),
                 'customer_note' => $order->get_customer_note(),
-                'shipping_total' => $order->get_shipping_total(),
-                'shipping_tax_total' => $order->get_total_tax(),
-                'fee_total' => $order->get_total_fees(),
-                'tax_total' => $order->get_total_tax(),
-                'discount_total' => $order->get_total_discount(),
-                'refunded_total' => $order->get_total_refunded(),
-                'shipping_method' => $order->get_shipping_method(),
+                'item_id' => '',
+                'item_product_id' => '',
+                'item_name' => '',
+                'item_sku' => '',
+                'item_quantity' => '',
+                'item_subtotal' => '',
+                'item_subtotal_tax' => '',
+                'item_total' => '',
+                'item_total_tax' => '',
+                'item_refunded' => '',
+                'item_refunded_qty' => '',
+                'item_meta' => '',
+                'item_price' => '',
+                'line_items' => $this->get_line_items($order),
+                'shipping_items' => $this->get_shipping_items($order),
+                'fee_items' => $this->get_fee_items($order),
+                'tax_items' => $this->get_tax_items($order),
+                'coupon_items' => $this->get_coupon_items($order),
+                'refunds' => $this->get_refunds($order),
+                'order_notes' => $this->get_order_notes($order),
+                'download_permissions' => $this->get_download_permissions($order),
                 'order_meta' => $this->get_order_meta($order)
             );
             
@@ -258,27 +282,38 @@ class CSV_Generator {
         foreach ($users as $user) {
             $customer_data = array(
                 'customer_id' => $user->ID,
-                'user_id' => $user->ID,
-                'username' => $user->user_login,
-                'email' => $user->user_email,
                 'first_name' => get_user_meta($user->ID, 'first_name', true),
                 'last_name' => get_user_meta($user->ID, 'last_name', true),
-                'display_name' => $user->display_name,
-                'role' => implode(', ', $user->roles),
+                'user_login' => $user->user_login,
+                'email' => $user->user_email,
+                'user_pass' => $user->user_pass,
                 'date_registered' => $user->user_registered,
-                'total_spent' => wc_get_customer_total_spent($user->ID),
-                'order_count' => wc_get_customer_order_count($user->ID),
-                'last_order_date' => $this->get_customer_last_order_date($user->ID),
                 'billing_first_name' => get_user_meta($user->ID, 'billing_first_name', true),
                 'billing_last_name' => get_user_meta($user->ID, 'billing_last_name', true),
+                'billing_full_name' => get_user_meta($user->ID, 'billing_first_name', true) . ' ' . get_user_meta($user->ID, 'billing_last_name', true),
+                'billing_company' => get_user_meta($user->ID, 'billing_company', true),
                 'billing_email' => get_user_meta($user->ID, 'billing_email', true),
                 'billing_phone' => get_user_meta($user->ID, 'billing_phone', true),
                 'billing_address_1' => get_user_meta($user->ID, 'billing_address_1', true),
                 'billing_address_2' => get_user_meta($user->ID, 'billing_address_2', true),
+                'billing_postcode' => get_user_meta($user->ID, 'billing_postcode', true),
                 'billing_city' => get_user_meta($user->ID, 'billing_city', true),
                 'billing_state' => get_user_meta($user->ID, 'billing_state', true),
-                'billing_postcode' => get_user_meta($user->ID, 'billing_postcode', true),
+                'billing_state_code' => get_user_meta($user->ID, 'billing_state', true),
                 'billing_country' => get_user_meta($user->ID, 'billing_country', true),
+                'shipping_first_name' => get_user_meta($user->ID, 'shipping_first_name', true),
+                'shipping_last_name' => get_user_meta($user->ID, 'shipping_last_name', true),
+                'shipping_full_name' => get_user_meta($user->ID, 'shipping_first_name', true) . ' ' . get_user_meta($user->ID, 'shipping_last_name', true),
+                'shipping_company' => get_user_meta($user->ID, 'shipping_company', true),
+                'shipping_address_1' => get_user_meta($user->ID, 'shipping_address_1', true),
+                'shipping_address_2' => get_user_meta($user->ID, 'shipping_address_2', true),
+                'shipping_postcode' => get_user_meta($user->ID, 'shipping_postcode', true),
+                'shipping_city' => get_user_meta($user->ID, 'shipping_city', true),
+                'shipping_state' => get_user_meta($user->ID, 'shipping_state', true),
+                'shipping_state_code' => get_user_meta($user->ID, 'shipping_state', true),
+                'shipping_country' => get_user_meta($user->ID, 'shipping_country', true),
+                'total_spent' => $this->get_customer_total_spent($user->ID),
+                'order_count' => $this->get_customer_order_count($user->ID),
                 'customer_meta' => $this->get_customer_meta($user->ID)
             );
             
@@ -481,6 +516,156 @@ class CSV_Generator {
             $meta[] = $meta_item->key . ': ' . $meta_item->value;
         }
         return implode('; ', $meta);
+    }
+    
+    private function get_shipping_tax_total($order) {
+        return method_exists($order, 'get_shipping_tax_total') ? $order->get_shipping_tax_total() : 0;
+    }
+
+    private function get_fee_tax_total($order) {
+        return method_exists($order, 'get_total_fee_tax') ? $order->get_total_fee_tax() : 0;
+    }
+
+    private function get_line_items($order) {
+        $line_items = array();
+        foreach ($order->get_items() as $item_id => $item) {
+            $line_item_data = array(
+                'item_id' => $item_id,
+                'item_product_id' => method_exists($item, 'get_product_id') ? $item->get_product_id() : '',
+                'item_name' => $item->get_name(),
+                'item_sku' => method_exists($item, 'get_sku') ? $item->get_sku() : '',
+                'item_quantity' => $item->get_quantity(),
+                'item_subtotal' => method_exists($item, 'get_subtotal') ? $item->get_subtotal() : '',
+                'item_subtotal_tax' => method_exists($item, 'get_subtotal_tax') ? $item->get_subtotal_tax() : '',
+                'item_total' => method_exists($item, 'get_total') ? $item->get_total() : '',
+                'item_total_tax' => method_exists($item, 'get_total_tax') ? $item->get_total_tax() : '',
+                'item_refunded' => method_exists($item, 'get_total_refunded') ? $item->get_total_refunded() : '',
+                'item_refunded_qty' => method_exists($item, 'get_qty_refunded') ? $item->get_qty_refunded() : '',
+                'item_meta' => $this->get_item_meta($item),
+                'item_price' => method_exists($item, 'get_price') ? $item->get_price() : ''
+            );
+            $line_items[] = $line_item_data;
+        }
+        return $line_items;
+    }
+
+    private function get_shipping_items($order) {
+        $shipping_items = array();
+        foreach ($order->get_items('shipping') as $item_id => $item) {
+            $shipping_item_data = array(
+                'item_id' => $item_id,
+                'item_name' => $item->get_name(),
+                'item_total' => method_exists($item, 'get_total') ? $item->get_total() : '',
+                'item_total_tax' => method_exists($item, 'get_total_tax') ? $item->get_total_tax() : '',
+                'item_meta' => $this->get_item_meta($item)
+            );
+            $shipping_items[] = $shipping_item_data;
+        }
+        return $shipping_items;
+    }
+
+    private function get_fee_items($order) {
+        $fee_items = array();
+        foreach ($order->get_items('fee') as $item_id => $item) {
+            $fee_item_data = array(
+                'item_id' => $item_id,
+                'item_name' => $item->get_name(),
+                'item_total' => method_exists($item, 'get_total') ? $item->get_total() : '',
+                'item_total_tax' => method_exists($item, 'get_total_tax') ? $item->get_total_tax() : '',
+                'item_meta' => $this->get_item_meta($item)
+            );
+            $fee_items[] = $fee_item_data;
+        }
+        return $fee_items;
+    }
+
+    private function get_tax_items($order) {
+        $tax_items = array();
+        foreach ($order->get_items('tax') as $item_id => $item) {
+            $tax_item_data = array(
+                'item_id' => $item_id,
+                'item_name' => $item->get_name(),
+                'item_total' => method_exists($item, 'get_total') ? $item->get_total() : '',
+                'item_total_tax' => method_exists($item, 'get_total_tax') ? $item->get_total_tax() : '',
+                'item_meta' => $this->get_item_meta($item)
+            );
+            $tax_items[] = $tax_item_data;
+        }
+        return $tax_items;
+    }
+
+    private function get_coupon_items($order) {
+        $coupon_items = array();
+        foreach ($order->get_items('coupon') as $item_id => $item) {
+            $coupon_item_data = array(
+                'item_id' => $item_id,
+                'item_name' => $item->get_name(),
+                'item_total' => method_exists($item, 'get_total') ? $item->get_total() : '',
+                'item_total_tax' => method_exists($item, 'get_total_tax') ? $item->get_total_tax() : '',
+                'item_meta' => $this->get_item_meta($item)
+            );
+            $coupon_items[] = $coupon_item_data;
+        }
+        return $coupon_items;
+    }
+
+    private function get_refunds($order) {
+        $refunds = array();
+        foreach ($order->get_refunds() as $refund) {
+            $refund_data = array(
+                'refund_id' => $refund->get_id(),
+                'refund_reason' => method_exists($refund, 'get_reason') ? $refund->get_reason() : '',
+                'refund_amount' => $refund->get_amount(),
+                'refund_date' => $refund->get_date_created()->format('Y-m-d H:i:s'),
+                'refund_meta' => $this->get_order_meta($refund)
+            );
+            $refunds[] = $refund_data;
+        }
+        return $refunds;
+    }
+
+    private function get_order_notes($order) {
+        $notes = array();
+        $customer_notes = $order->get_customer_notes();
+        if (is_array($customer_notes)) {
+            foreach ($customer_notes as $note) {
+                $notes[] = array(
+                    'note_id' => isset($note->id) ? $note->id : '',
+                    'note_author' => isset($note->author) ? $note->author : '',
+                    'note_date' => isset($note->date_created) ? $note->date_created->format('Y-m-d H:i:s') : '',
+                    'note_content' => isset($note->note) ? $note->note : ''
+                );
+            }
+        }
+        return $notes;
+    }
+
+    private function get_download_permissions($order) {
+        $permissions = array();
+        if (method_exists($order, 'get_download_permissions')) {
+            $download_permissions = $order->get_download_permissions();
+            if (is_array($download_permissions)) {
+                foreach ($download_permissions as $permission) {
+                    $permissions[] = array(
+                        'permission_id' => isset($permission->id) ? $permission->id : '',
+                        'permission_product_id' => isset($permission->product_id) ? $permission->product_id : '',
+                        'permission_user_id' => isset($permission->user_id) ? $permission->user_id : '',
+                        'permission_downloads_remaining' => isset($permission->downloads_remaining) ? $permission->downloads_remaining : '',
+                        'permission_access_expires' => isset($permission->access_expires) && $permission->access_expires ? $permission->access_expires->format('Y-m-d H:i:s') : '',
+                        'permission_meta' => $this->get_order_meta($permission)
+                    );
+                }
+            }
+        }
+        return $permissions;
+    }
+
+    private function get_customer_total_spent($user_id) {
+        return function_exists('wc_get_customer_total_spent') ? wc_get_customer_total_spent($user_id) : 0;
+    }
+
+    private function get_customer_order_count($user_id) {
+        return function_exists('wc_get_customer_order_count') ? wc_get_customer_order_count($user_id) : 0;
     }
     
     private function get_customer_last_order_date($user_id) {
