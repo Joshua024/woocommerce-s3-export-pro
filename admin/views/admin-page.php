@@ -459,7 +459,7 @@ function get_data_source_options($export_type, $selected_value = '') {
                                         
                                         foreach ($current_field_mappings as $field_index => $field_data):
                                         ?>
-                                            <tr class="wc-s3-field-row" data-field-index="<?php echo $field_index; ?>">
+                                            <tr class="wc-s3-field-row" data-field-index="<?php echo (int)$field_index; ?>">
                                                 <td>
                                                     <input type="checkbox" name="export_types[<?php echo $index; ?>][field_mappings][<?php echo $field_index; ?>][enabled]" 
                                                            value="1" <?php checked($field_data['enabled'] ?? true); ?>>
@@ -478,8 +478,8 @@ function get_data_source_options($export_type, $selected_value = '') {
                                                 <td>
                                                     <button type="button" class="wc-s3-btn error small remove-field-btn" 
                                                             data-action="remove-field" 
-                                                            data-export-type="<?php echo $index; ?>" 
-                                                            data-field-index="<?php echo $field_index; ?>">
+                                                            data-export-type="<?php echo (int)$index; ?>" 
+                                                            data-field-index="<?php echo (int)$field_index; ?>">
                                                         🗑️
                                                     </button>
                                                 </td>
@@ -902,20 +902,15 @@ function removeFieldRow(exportTypeIndex, fieldIndex) {
         return;
     }
     
-    const rows = tbody.querySelectorAll('tr');
-    if (fieldIndex >= rows.length) {
-        console.error('Field index out of bounds:', fieldIndex, 'Total rows:', rows.length);
-        return;
-    }
-    
-    const row = rows[fieldIndex];
+    // Find the row by data-field-index attribute
+    const row = tbody.querySelector(`tr[data-field-index="${fieldIndex}"]`);
     if (!row) {
-        console.error('Row not found at index:', fieldIndex);
+        console.error('Row not found with field index:', fieldIndex);
         return;
     }
     
     if (confirm('Are you sure you want to remove this field?')) {
-        console.log('Removing row at index:', fieldIndex);
+        console.log('Removing row with field index:', fieldIndex);
         row.remove();
         
         // Re-index remaining rows
@@ -932,7 +927,6 @@ function removeFieldRow(exportTypeIndex, fieldIndex) {
                 if (name) {
                     const newName = name.replace(/\[\d+\]/, `[${index}]`);
                     input.name = newName;
-                    console.log('Updated input name:', name, '->', newName);
                 }
             });
             
@@ -940,7 +934,6 @@ function removeFieldRow(exportTypeIndex, fieldIndex) {
             const removeButton = row.querySelector('button[data-action="remove-field"]');
             if (removeButton) {
                 removeButton.setAttribute('data-field-index', index);
-                console.log('Updated remove button for index:', index);
             }
         });
         
@@ -1220,8 +1213,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         if (e.target && e.target.classList.contains('remove-field-btn')) {
             e.preventDefault();
-            const exportTypeIndex = parseInt(e.target.getAttribute('data-export-type'));
-            const fieldIndex = parseInt(e.target.getAttribute('data-field-index'));
+            const exportTypeIndex = parseInt(e.target.getAttribute('data-export-type')) || 0;
+            const fieldIndex = parseInt(e.target.getAttribute('data-field-index')) || 0;
+            
+            if (isNaN(fieldIndex)) {
+                console.error('Invalid field index:', e.target.getAttribute('data-field-index'));
+                return;
+            }
             
             console.log('Remove button clicked - Export Type:', exportTypeIndex, 'Field Index:', fieldIndex);
             removeFieldRow(exportTypeIndex, fieldIndex);
