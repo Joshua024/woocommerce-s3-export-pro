@@ -476,7 +476,10 @@ function get_data_source_options($export_type, $selected_value = '') {
                                                     </select>
                                                 </td>
                                                 <td>
-                                                    <button type="button" class="wc-s3-btn error small" onclick="removeFieldRow(<?php echo $index; ?>, <?php echo $field_index; ?>)">
+                                                    <button type="button" class="wc-s3-btn error small remove-field-btn" 
+                                                            data-action="remove-field" 
+                                                            data-export-type="<?php echo $index; ?>" 
+                                                            data-field-index="<?php echo $field_index; ?>">
                                                         🗑️
                                                     </button>
                                                 </td>
@@ -880,7 +883,10 @@ function addFieldRow(exportTypeIndex) {
             </select>
         </td>
         <td>
-            <button type="button" class="wc-s3-btn error small" onclick="removeFieldRow(${exportTypeIndex}, ${newFieldIndex})">
+            <button type="button" class="wc-s3-btn error small remove-field-btn" 
+                    data-action="remove-field" 
+                    data-export-type="${exportTypeIndex}" 
+                    data-field-index="${newFieldIndex}">
                 🗑️
             </button>
         </td>
@@ -892,31 +898,54 @@ function addFieldRow(exportTypeIndex) {
 
 function removeFieldRow(exportTypeIndex, fieldIndex) {
     const tbody = document.getElementById(`field-mapping-tbody-${exportTypeIndex}`);
+    if (!tbody) {
+        console.error('Table body not found for export type:', exportTypeIndex);
+        return;
+    }
+    
     const rows = tbody.querySelectorAll('tr');
+    if (fieldIndex >= rows.length) {
+        console.error('Field index out of bounds:', fieldIndex, 'Total rows:', rows.length);
+        return;
+    }
     
-    // Find the row by index (since fieldIndex is the position, not the data attribute)
     const row = rows[fieldIndex];
+    if (!row) {
+        console.error('Row not found at index:', fieldIndex);
+        return;
+    }
     
-    if (row && confirm('Are you sure you want to remove this field?')) {
+    if (confirm('Are you sure you want to remove this field?')) {
+        console.log('Removing row at index:', fieldIndex);
         row.remove();
         
         // Re-index remaining rows
         const remainingRows = tbody.querySelectorAll('tr');
+        console.log('Remaining rows after removal:', remainingRows.length);
+        
         remainingRows.forEach((row, index) => {
             row.dataset.fieldIndex = index;
+            
+            // Update all form elements
             const inputs = row.querySelectorAll('input, select');
             inputs.forEach(input => {
                 const name = input.name;
                 if (name) {
-                    input.name = name.replace(/\[\d+\]/, `[${index}]`);
+                    const newName = name.replace(/\[\d+\]/, `[${index}]`);
+                    input.name = newName;
+                    console.log('Updated input name:', name, '->', newName);
                 }
             });
-            // Update the onclick attribute for the remove button
-            const removeButton = row.querySelector('button[onclick*="removeFieldRow"]');
+            
+            // Update the remove button
+            const removeButton = row.querySelector('button[data-action="remove-field"]');
             if (removeButton) {
-                removeButton.setAttribute('onclick', `removeFieldRow(${exportTypeIndex}, ${index})`);
+                removeButton.setAttribute('data-field-index', index);
+                console.log('Updated remove button for index:', index);
             }
         });
+        
+        console.log('Field removal completed successfully');
     }
 }
 
@@ -945,10 +974,10 @@ function removeSelectedFields(exportTypeIndex) {
                     input.name = name.replace(/\[\d+\]/, `[${index}]`);
                 }
             });
-            // Update the onclick attribute for the remove button
-            const removeButton = row.querySelector('button[onclick*="removeFieldRow"]');
+            // Update the remove button data attributes
+            const removeButton = row.querySelector('button[data-action="remove-field"]');
             if (removeButton) {
-                removeButton.setAttribute('onclick', `removeFieldRow(${exportTypeIndex}, ${index})`);
+                removeButton.setAttribute('data-field-index', index);
             }
         });
     }
@@ -981,7 +1010,10 @@ function loadDefaultFields(exportTypeIndex, exportType) {
                     </select>
                 </td>
                 <td>
-                    <button type="button" class="wc-s3-btn error small" onclick="removeFieldRow(${exportTypeIndex}, ${index})">
+                    <button type="button" class="wc-s3-btn error small remove-field-btn" 
+                            data-action="remove-field" 
+                            data-export-type="${exportTypeIndex}" 
+                            data-field-index="${index}">
                         🗑️
                     </button>
                 </td>
@@ -1175,13 +1207,25 @@ function showNotification(type, message) {
     }, 5000);
 }
 
-// Initialize drag and drop for existing export types
+// Initialize drag and drop for existing export types and set up event delegation
 document.addEventListener('DOMContentLoaded', function() {
     const exportTypeSections = document.querySelectorAll('.wc-s3-export-type-section');
     exportTypeSections.forEach(section => {
         const index = section.dataset.index;
         if (index !== undefined) {
             initializeDragAndDrop(parseInt(index));
+        }
+    });
+    
+    // Set up event delegation for remove field buttons
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('remove-field-btn')) {
+            e.preventDefault();
+            const exportTypeIndex = parseInt(e.target.getAttribute('data-export-type'));
+            const fieldIndex = parseInt(e.target.getAttribute('data-field-index'));
+            
+            console.log('Remove button clicked - Export Type:', exportTypeIndex, 'Field Index:', fieldIndex);
+            removeFieldRow(exportTypeIndex, fieldIndex);
         }
     });
 });
