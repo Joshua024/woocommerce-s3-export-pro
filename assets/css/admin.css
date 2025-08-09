@@ -445,4 +445,332 @@
 
 .wc-s3-fade-in {
     animation: fadeInUp 0.5s ease-out;
+}
+
+/* Export Types Configuration */
+.wc-s3-export-type-section {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.wc-s3-export-type-section:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.wc-s3-export-type-section h4 {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+}
+
+.wc-s3-form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.wc-s3-form-row .wc-s3-form-group {
+    margin-bottom: 0;
+}
+
+.wc-s3-form-group .description {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+
+/* Checkbox styling */
+.wc-s3-form-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 0.5rem;
+}
+
+.wc-s3-form-group label {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    color: #374151;
+}
+
+/* Export Type Header */
+.wc-s3-export-type-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.wc-s3-export-type-header h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.wc-s3-btn.small {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 4px;
+}
+
+/* Export Type Actions */
+.wc-s3-export-type-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* Textarea styling */
+.wc-s3-form-group textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.875rem;
+    resize: vertical;
+    min-height: 60px;
+}
+
+.wc-s3-form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Field Mapping Styles */
+.wc-s3-field-mapping-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.wc-s3-field-mapping-section h4 {
+    margin: 0 0 1rem 0;
+    color: #1e293b;
+    font-size: 1.1rem;
+}
+
+.wc-s3-field-mapping-table-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: white;
+    margin-bottom: 1rem;
+}
+
+.wc-s3-field-mapping-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.wc-s3-field-mapping-table th {
+    background: #f8fafc;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.wc-s3-field-mapping-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.wc-s3-field-mapping-table tr:hover {
+    background-color: #f8fafc;
+}
+
+.wc-s3-field-mapping-table tr:last-child td {
+    border-bottom: none;
+}
+
+.wc-s3-checkbox-col {
+    width: 50px;
+    text-align: center;
+}
+
+.wc-s3-handle-col {
+    width: 40px;
+    text-align: center;
+}
+
+.wc-s3-column-name-col {
+    width: 35%;
+}
+
+.wc-s3-data-source-col {
+    width: 45%;
+}
+
+.wc-s3-actions-col {
+    width: 60px;
+    text-align: center;
+}
+
+.wc-s3-drag-handle {
+    cursor: grab;
+    color: #9ca3af;
+    font-size: 1.2rem;
+    user-select: none;
+}
+
+.wc-s3-drag-handle:active {
+    cursor: grabbing;
+}
+
+.wc-s3-field-mapping-table input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.wc-s3-field-mapping-table input[type="text"] {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease;
+}
+
+.wc-s3-field-mapping-table input[type="text"]:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.wc-s3-field-mapping-table select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    background: white;
+    transition: border-color 0.2s ease;
+}
+
+.wc-s3-field-mapping-table select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.wc-s3-remove-field {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background-color 0.2s ease;
+}
+
+.wc-s3-remove-field:hover {
+    background: #dc2626;
+}
+
+.wc-s3-field-mapping-actions {
+    display: flex !important;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+}
+
+.wc-s3-btn.small {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 4px;
+}
+
+/* Drag and Drop Styles */
+.wc-s3-field-row.dragging {
+    opacity: 0.5;
+    background: #f3f4f6;
+    transform: rotate(2deg);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.wc-s3-field-row.drag-over {
+    border-top: 3px solid #3b82f6;
+    background: #eff6ff;
+}
+
+.wc-s3-drag-handle {
+    cursor: grab;
+    color: #9ca3af;
+    font-size: 1.2rem;
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.wc-s3-drag-handle:hover {
+    color: #6b7280;
+    cursor: grabbing;
+}
+
+.wc-s3-field-row:hover .wc-s3-drag-handle {
+    color: #6b7280;
+}
+
+/* Responsive adjustments for export types */
+@media (max-width: 768px) {
+    .wc-s3-form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .wc-s3-export-type-section {
+        padding: 1rem;
+    }
+    
+    .wc-s3-export-type-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .wc-s3-export-type-actions {
+        flex-direction: column;
+    }
+    
+    .wc-s3-field-mapping-row {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        padding: 1rem;
+    }
+    
+    .wc-s3-field-checkbox {
+        justify-content: flex-start;
+    }
+    
+    .wc-s3-field-mapping-actions {
+        flex-direction: column;
+    }
 } 

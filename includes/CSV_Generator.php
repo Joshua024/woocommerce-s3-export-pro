@@ -1,0 +1,482 @@
+<?php
+namespace WC_S3_Export_Pro;
+
+/**
+ * CSV Generator Class
+ * 
+ * Handles data extraction from WooCommerce and CSV generation with custom field mappings.
+ */
+class CSV_Generator {
+    
+    /**
+     * Settings instance
+     */
+    private $settings;
+    
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->settings = new Settings();
+    }
+    
+    /**
+     * Generate CSV file for export type
+     */
+    public function generate_csv($export_type, $date_param = null) {
+        $log_file = $this->get_log_file();
+        $timestamp = date('Y-m-d H:i:s');
+        
+        $this->log("[$timestamp] Generating CSV for export type: {$export_type['name']}", $log_file);
+        
+        // Get field mappings
+        $field_mappings = $export_type['field_mappings'] ?? [];
+        
+        if (empty($field_mappings)) {
+            $this->log("[$timestamp] No field mappings found for export type: {$export_type['name']}", $log_file);
+            return false;
+        }
+        
+        // Extract data based on export type
+        $data = $this->extract_data($export_type['type'], $date_param);
+        
+        if (empty($data)) {
+            $this->log("[$timestamp] No data found for export type: {$export_type['name']}", $log_file);
+            return false;
+        }
+        
+        // Generate CSV file
+        $file_data = $this->create_csv_file($data, $field_mappings, $export_type);
+        
+        if ($file_data) {
+            $this->log("[$timestamp] CSV file generated successfully for: {$export_type['name']}", $log_file);
+        } else {
+            $this->log("[$timestamp] Failed to generate CSV file for: {$export_type['name']}", $log_file);
+        }
+        
+        return $file_data;
+    }
+    
+    /**
+     * Extract data from WooCommerce based on export type
+     */
+    private function extract_data($export_type, $date_param = null) {
+        switch ($export_type) {
+            case 'orders':
+                return $this->extract_orders_data($date_param);
+            case 'order_items':
+                return $this->extract_order_items_data($date_param);
+            case 'customers':
+                return $this->extract_customers_data($date_param);
+            case 'products':
+                return $this->extract_products_data($date_param);
+            case 'coupons':
+                return $this->extract_coupons_data($date_param);
+            default:
+                return array();
+        }
+    }
+    
+    /**
+     * Extract orders data
+     */
+    private function extract_orders_data($date_param = null) {
+        $args = array(
+            'limit' => -1,
+            'status' => array('wc-completed', 'wc-processing', 'wc-on-hold'),
+            'return' => 'objects'
+        );
+        
+        if ($date_param) {
+            $args['date_created'] = $date_param;
+        }
+        
+        $orders = wc_get_orders($args);
+        $data = array();
+        
+        foreach ($orders as $order) {
+            $order_data = array(
+                'order_id' => $order->get_id(),
+                'order_date' => $order->get_date_created()->format('Y-m-d H:i:s'),
+                'order_status' => $order->get_status(),
+                'customer_id' => $order->get_customer_id(),
+                'billing_first_name' => $order->get_billing_first_name(),
+                'billing_last_name' => $order->get_billing_last_name(),
+                'billing_email' => $order->get_billing_email(),
+                'billing_phone' => $order->get_billing_phone(),
+                'billing_address_1' => $order->get_billing_address_1(),
+                'billing_address_2' => $order->get_billing_address_2(),
+                'billing_city' => $order->get_billing_city(),
+                'billing_state' => $order->get_billing_state(),
+                'billing_postcode' => $order->get_billing_postcode(),
+                'billing_country' => $order->get_billing_country(),
+                'shipping_first_name' => $order->get_shipping_first_name(),
+                'shipping_last_name' => $order->get_shipping_last_name(),
+                'shipping_address_1' => $order->get_shipping_address_1(),
+                'shipping_address_2' => $order->get_shipping_address_2(),
+                'shipping_city' => $order->get_shipping_city(),
+                'shipping_state' => $order->get_shipping_state(),
+                'shipping_postcode' => $order->get_shipping_postcode(),
+                'shipping_country' => $order->get_shipping_country(),
+                'payment_method' => $order->get_payment_method(),
+                'payment_method_title' => $order->get_payment_method_title(),
+                'order_total' => $order->get_total(),
+                'order_subtotal' => $order->get_subtotal(),
+                'order_tax' => $order->get_total_tax(),
+                'order_shipping' => $order->get_shipping_total(),
+                'order_discount' => $order->get_total_discount(),
+                'order_currency' => $order->get_currency(),
+                'customer_note' => $order->get_customer_note(),
+                'order_meta' => $this->get_order_meta($order)
+            );
+            
+            $data[] = $order_data;
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * Extract order items data
+     */
+    private function extract_order_items_data($date_param = null) {
+        $args = array(
+            'limit' => -1,
+            'status' => array('wc-completed', 'wc-processing', 'wc-on-hold'),
+            'return' => 'objects'
+        );
+        
+        if ($date_param) {
+            $args['date_created'] = $date_param;
+        }
+        
+        $orders = wc_get_orders($args);
+        $data = array();
+        
+        foreach ($orders as $order) {
+            foreach ($order->get_items() as $item_id => $item) {
+                $product_id = $item->get_product_id();
+                $product = \wc_get_product($product_id);
+                $variation_id = $item->get_variation_id();
+                
+                $item_data = array(
+                    'order_id' => $order->get_id(),
+                    'order_item_id' => $item_id,
+                    'product_id' => $product_id,
+                    'product_name' => $item->get_name(),
+                    'product_sku' => $product ? $product->get_sku() : '',
+                    'product_variation_id' => $variation_id,
+                    'product_variation_sku' => $variation_id ? \wc_get_product($variation_id)->get_sku() : '',
+                    'product_variation_attributes' => $this->get_variation_attributes($item),
+                    'quantity' => $item->get_quantity(),
+                    'line_total' => $item->get_total(),
+                    'line_subtotal' => $item->get_subtotal(),
+                    'line_tax' => $item->get_total_tax(),
+                    'line_subtotal_tax' => $item->get_subtotal_tax(),
+                    'product_meta' => $this->get_item_meta($item)
+                );
+                
+                $data[] = $item_data;
+            }
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * Extract customers data
+     */
+    private function extract_customers_data($date_param = null) {
+        $args = array(
+            'role' => 'customer',
+            'number' => -1
+        );
+        
+        $users = get_users($args);
+        $data = array();
+        
+        foreach ($users as $user) {
+            $customer_data = array(
+                'customer_id' => $user->ID,
+                'user_id' => $user->ID,
+                'username' => $user->user_login,
+                'email' => $user->user_email,
+                'first_name' => get_user_meta($user->ID, 'first_name', true),
+                'last_name' => get_user_meta($user->ID, 'last_name', true),
+                'display_name' => $user->display_name,
+                'role' => implode(', ', $user->roles),
+                'date_registered' => $user->user_registered,
+                'total_spent' => wc_get_customer_total_spent($user->ID),
+                'order_count' => wc_get_customer_order_count($user->ID),
+                'last_order_date' => $this->get_customer_last_order_date($user->ID),
+                'billing_first_name' => get_user_meta($user->ID, 'billing_first_name', true),
+                'billing_last_name' => get_user_meta($user->ID, 'billing_last_name', true),
+                'billing_email' => get_user_meta($user->ID, 'billing_email', true),
+                'billing_phone' => get_user_meta($user->ID, 'billing_phone', true),
+                'billing_address_1' => get_user_meta($user->ID, 'billing_address_1', true),
+                'billing_address_2' => get_user_meta($user->ID, 'billing_address_2', true),
+                'billing_city' => get_user_meta($user->ID, 'billing_city', true),
+                'billing_state' => get_user_meta($user->ID, 'billing_state', true),
+                'billing_postcode' => get_user_meta($user->ID, 'billing_postcode', true),
+                'billing_country' => get_user_meta($user->ID, 'billing_country', true),
+                'customer_meta' => $this->get_customer_meta($user->ID)
+            );
+            
+            $data[] = $customer_data;
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * Extract products data
+     */
+    private function extract_products_data($date_param = null) {
+        $args = array(
+            'limit' => -1,
+            'status' => 'publish',
+            'return' => 'objects'
+        );
+        
+        $products = wc_get_products($args);
+        $data = array();
+        
+        foreach ($products as $product) {
+            $product_data = array(
+                'product_id' => $product->get_id(),
+                'product_name' => $product->get_name(),
+                'product_sku' => $product->get_sku(),
+                'product_type' => $product->get_type(),
+                'product_status' => $product->get_status(),
+                'product_price' => $product->get_price(),
+                'product_regular_price' => $product->get_regular_price(),
+                'product_sale_price' => $product->get_sale_price(),
+                'product_description' => $product->get_description(),
+                'product_short_description' => $product->get_short_description(),
+                'product_categories' => $this->get_product_categories($product),
+                'product_tags' => $this->get_product_tags($product),
+                'product_stock_quantity' => $product->get_stock_quantity(),
+                'product_stock_status' => $product->get_stock_status(),
+                'product_weight' => $product->get_weight(),
+                'product_dimensions' => $this->get_product_dimensions($product),
+                'product_meta' => $this->get_product_meta($product)
+            );
+            
+            $data[] = $product_data;
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * Extract coupons data
+     */
+    private function extract_coupons_data($date_param = null) {
+        $args = array(
+            'limit' => -1,
+            'status' => 'publish',
+            'return' => 'objects'
+        );
+        
+        $coupons = \wc_get_coupons($args);
+        $data = array();
+        
+        foreach ($coupons as $coupon) {
+            $coupon_data = array(
+                'coupon_id' => $coupon->get_id(),
+                'coupon_code' => $coupon->get_code(),
+                'coupon_type' => $coupon->get_discount_type(),
+                'coupon_amount' => $coupon->get_amount(),
+                'coupon_description' => $coupon->get_description(),
+                'coupon_date_expires' => $coupon->get_date_expires() ? $coupon->get_date_expires()->format('Y-m-d H:i:s') : '',
+                'coupon_usage_count' => $coupon->get_usage_count(),
+                'coupon_individual_use' => $coupon->get_individual_use() ? 'yes' : 'no',
+                'coupon_product_ids' => implode(',', $coupon->get_product_ids()),
+                'coupon_excluded_product_ids' => implode(',', $coupon->get_excluded_product_ids()),
+                'coupon_product_categories' => implode(',', $coupon->get_product_categories()),
+                'coupon_excluded_product_categories' => implode(',', $coupon->get_excluded_product_categories()),
+                'coupon_usage_limit' => $coupon->get_usage_limit(),
+                'coupon_usage_limit_per_user' => $coupon->get_usage_limit_per_user(),
+                'coupon_limit_usage_to_x_items' => $coupon->get_limit_usage_to_x_items(),
+                'coupon_free_shipping' => $coupon->get_free_shipping() ? 'yes' : 'no',
+                'coupon_meta' => $this->get_coupon_meta($coupon)
+            );
+            
+            $data[] = $coupon_data;
+        }
+        
+        return $data;
+    }
+    
+    /**
+     * Create CSV file from data
+     */
+    private function create_csv_file($data, $field_mappings, $export_type) {
+        if (empty($data)) {
+            return false;
+        }
+        
+        // Generate filename
+        $day = date('d');
+        $month = date('m');
+        $year = date('Y');
+        $filename = "FO-{$export_type['name']}-{$day}-{$month}-{$year}.csv";
+        
+        // Create uploads directory
+        $upload_dir = wp_upload_dir();
+        $local_folder = $export_type['local_uploads_folder'] ?: sanitize_title($export_type['name']);
+        $folder_path = $upload_dir['basedir'] . '/wc-s3-exports/' . $local_folder;
+        
+        if (!file_exists($folder_path)) {
+            wp_mkdir_p($folder_path);
+        }
+        
+        $file_path = $folder_path . '/' . $filename;
+        
+        // Create CSV file
+        $file_handle = fopen($file_path, 'w');
+        
+        if (!$file_handle) {
+            return false;
+        }
+        
+        // Write headers
+        $headers = array_values($field_mappings);
+        fputcsv($file_handle, $headers);
+        
+        // Write data rows
+        foreach ($data as $row) {
+            $csv_row = array();
+            foreach (array_keys($field_mappings) as $field_key) {
+                $csv_row[] = $row[$field_key] ?? '';
+            }
+            fputcsv($file_handle, $csv_row);
+        }
+        
+        fclose($file_handle);
+        
+        return array(
+            'file_name' => $filename,
+            'file_path' => $file_path
+        );
+    }
+    
+    /**
+     * Helper methods for data extraction
+     */
+    private function get_order_meta($order) {
+        $meta = array();
+        foreach ($order->get_meta_data() as $meta_item) {
+            $meta[] = $meta_item->key . ': ' . $meta_item->value;
+        }
+        return implode('; ', $meta);
+    }
+    
+    private function get_variation_attributes($item) {
+        $attributes = array();
+        foreach ($item->get_meta_data() as $meta_item) {
+            if (strpos($meta_item->key, 'pa_') === 0) {
+                $attributes[] = $meta_item->key . ': ' . $meta_item->value;
+            }
+        }
+        return implode('; ', $attributes);
+    }
+    
+    private function get_item_meta($item) {
+        $meta = array();
+        foreach ($item->get_meta_data() as $meta_item) {
+            $meta[] = $meta_item->key . ': ' . $meta_item->value;
+        }
+        return implode('; ', $meta);
+    }
+    
+    private function get_customer_last_order_date($user_id) {
+        $orders = wc_get_orders(array(
+            'customer_id' => $user_id,
+            'limit' => 1,
+            'orderby' => 'date',
+            'order' => 'DESC'
+        ));
+        
+        return !empty($orders) ? $orders[0]->get_date_created()->format('Y-m-d H:i:s') : '';
+    }
+    
+    private function get_customer_meta($user_id) {
+        $meta = array();
+        $user_meta = get_user_meta($user_id);
+        foreach ($user_meta as $key => $values) {
+            if (!in_array($key, array('first_name', 'last_name', 'billing_', 'shipping_'))) {
+                $meta[] = $key . ': ' . implode(', ', $values);
+            }
+        }
+        return implode('; ', $meta);
+    }
+    
+    private function get_product_categories($product) {
+        $categories = get_the_terms($product->get_id(), 'product_cat');
+        if ($categories && !is_wp_error($categories)) {
+            return implode(', ', wp_list_pluck($categories, 'name'));
+        }
+        return '';
+    }
+    
+    private function get_product_tags($product) {
+        $tags = get_the_terms($product->get_id(), 'product_tag');
+        if ($tags && !is_wp_error($tags)) {
+            return implode(', ', wp_list_pluck($tags, 'name'));
+        }
+        return '';
+    }
+    
+    private function get_product_dimensions($product) {
+        $dimensions = $product->get_dimensions();
+        if (!empty($dimensions)) {
+            return $dimensions['length'] . 'x' . $dimensions['width'] . 'x' . $dimensions['height'];
+        }
+        return '';
+    }
+    
+    private function get_product_meta($product) {
+        $meta = array();
+        foreach ($product->get_meta_data() as $meta_item) {
+            $meta[] = $meta_item->key . ': ' . $meta_item->value;
+        }
+        return implode('; ', $meta);
+    }
+    
+    private function get_coupon_meta($coupon) {
+        $meta = array();
+        foreach ($coupon->get_meta_data() as $meta_item) {
+            $meta[] = $meta_item->key . ': ' . $meta_item->value;
+        }
+        return implode('; ', $meta);
+    }
+    
+    /**
+     * Get log file path
+     */
+    private function get_log_file() {
+        $upload_dir = wp_upload_dir();
+        $log_dir = $upload_dir['basedir'] . '/wc-s3-exports/logs/';
+        
+        if (!file_exists($log_dir)) {
+            wp_mkdir_p($log_dir);
+        }
+        
+        return $log_dir . 'csv-generator-' . date('Y-m-d') . '.log';
+    }
+    
+    /**
+     * Log message
+     */
+    private function log($message, $log_file = null) {
+        if (!$log_file) {
+            $log_file = $this->get_log_file();
+        }
+        
+        $timestamp = date('Y-m-d H:i:s');
+        $log_entry = "[$timestamp] $message" . PHP_EOL;
+        
+        file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
+    }
+}

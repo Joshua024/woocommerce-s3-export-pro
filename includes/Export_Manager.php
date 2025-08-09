@@ -60,6 +60,10 @@ class Export_Manager {
         add_action('wp_ajax_wc_s3_get_export_status', array($this, 'ajax_get_export_status'));
         add_action('wp_ajax_wc_s3_save_s3_config', array($this, 'ajax_save_s3_config'));
         add_action('wp_ajax_wc_s3_save_export_settings', array($this, 'ajax_save_export_settings'));
+        add_action('wp_ajax_wc_s3_save_export_types', array($this, 'ajax_save_export_types'));
+        add_action('wp_ajax_wc_s3_save_export_types_config', array($this, 'ajax_save_export_types_config'));
+        add_action('wp_ajax_wc_s3_add_export_type', array($this, 'ajax_add_export_type'));
+        add_action('wp_ajax_wc_s3_remove_export_type', array($this, 'ajax_remove_export_type'));
         add_action('wp_ajax_wc_s3_setup_automation', array($this, 'ajax_setup_automation'));
         add_action('wp_ajax_wc_s3_get_log_content', array($this, 'ajax_get_log_content'));
         
@@ -274,8 +278,7 @@ class Export_Manager {
         
         $settings = array(
             'export_frequency' => sanitize_text_field($_POST['export_frequency'] ?? 'daily'),
-            'export_time' => sanitize_text_field($_POST['export_time'] ?? '02:00'),
-            'export_types' => array_map('sanitize_text_field', $_POST['export_types'] ?? array())
+            'export_time' => sanitize_text_field($_POST['export_time'] ?? '01:00'),
         );
         
         $result = $this->settings->update_settings($settings);
@@ -284,6 +287,110 @@ class Export_Manager {
             wp_send_json_success(array('message' => 'Export settings saved successfully'));
         } else {
             wp_send_json_error(array('message' => 'Failed to save export settings'));
+        }
+    }
+    
+    /**
+     * AJAX: Save export types configuration
+     */
+    public function ajax_save_export_types() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $export_types = $_POST['export_types'] ?? array();
+        
+        $result = $this->settings->update_export_types_config($export_types);
+        
+        if ($result) {
+            // Set up automation for the new configuration
+            $this->automation_manager->setup_automation();
+            
+            wp_send_json_success(array('message' => 'Export types configuration saved successfully'));
+        } else {
+            wp_send_json_error(array('message' => 'Failed to save export types configuration'));
+        }
+    }
+    
+    /**
+     * AJAX: Save export types configuration (new method)
+     */
+    public function ajax_save_export_types_config() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $export_types = $_POST['export_types'] ?? array();
+        
+        $result = $this->settings->update_export_types_config($export_types);
+        
+        if ($result) {
+            // Set up automation for the new configuration
+            $this->automation_manager->setup_automation();
+            
+            wp_send_json_success(array('message' => 'Export types configuration saved successfully'));
+        } else {
+            wp_send_json_error(array('message' => 'Failed to save export types configuration'));
+        }
+    }
+    
+    /**
+     * AJAX: Add new export type
+     */
+    public function ajax_add_export_type() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $type_data = array(
+            'name' => sanitize_text_field($_POST['name'] ?? ''),
+            'type' => sanitize_text_field($_POST['type'] ?? 'orders'),
+            'enabled' => (bool) ($_POST['enabled'] ?? true),
+            'frequency' => sanitize_text_field($_POST['frequency'] ?? 'daily'),
+            'time' => sanitize_text_field($_POST['time'] ?? '01:00'),
+            's3_folder' => sanitize_text_field($_POST['s3_folder'] ?? ''),
+            'local_uploads_folder' => sanitize_text_field($_POST['local_uploads_folder'] ?? ''),
+            'file_prefix' => sanitize_text_field($_POST['file_prefix'] ?? ''),
+            'description' => sanitize_textarea_field($_POST['description'] ?? '')
+        );
+        
+        $result = $this->settings->add_export_type($type_data);
+        
+        if ($result) {
+            wp_send_json_success(array('message' => 'Export type added successfully'));
+        } else {
+            wp_send_json_error(array('message' => 'Failed to add export type'));
+        }
+    }
+    
+    /**
+     * AJAX: Remove export type
+     */
+    public function ajax_remove_export_type() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $type_id = sanitize_text_field($_POST['type_id'] ?? '');
+        
+        if (empty($type_id)) {
+            wp_send_json_error(array('message' => 'Export type ID is required'));
+        }
+        
+        $result = $this->settings->remove_export_type($type_id);
+        
+        if ($result) {
+            wp_send_json_success(array('message' => 'Export type removed successfully'));
+        } else {
+            wp_send_json_error(array('message' => 'Failed to remove export type'));
         }
     }
     

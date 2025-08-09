@@ -19,11 +19,17 @@ class Automation_Manager {
     private $s3_uploader;
     
     /**
+     * CSV Generator instance
+     */
+    private $csv_generator;
+    
+    /**
      * Constructor
      */
     public function __construct() {
         $this->settings = new Settings();
         $this->s3_uploader = new S3_Uploader();
+        $this->csv_generator = new CSV_Generator();
     }
     
     /**
@@ -70,60 +76,59 @@ class Automation_Manager {
         $success_count = 0;
         $failed_exports = array();
         
-        // Process WebSales with error handling
-        try {
-            $webSalesFileData = $this->create_csv_export_file('WebSales', $date_param);
-            if (!empty($webSalesFileData)) {
-                $s3_config = $this->settings->get_s3_config();
-                $this->s3_uploader->upload_file(
-                    $s3_config['bucket'] ?: 'directoryofsocialchange',
-                    $webSalesFileData['file_name'],
-                    $webSalesFileData['file_path'],
-                    'FundsOnlineWebsiteSales'
-                );
-                $success_count++;
-                $this->log("[$timestamp] WebSales export successful", $log_file);
-            } else {
-                $failed_exports[] = 'WebSales';
-                $this->log("[$timestamp] WebSales export failed - no file created", $log_file);
-            }
-        } catch (\Exception $e) {
-            $failed_exports[] = 'WebSales';
-            $this->log("[$timestamp] WebSales export exception: " . $e->getMessage(), $log_file);
-        }
+        // Get export types configuration
+        $export_types_config = $this->settings->get_export_types_config();
+        $s3_config = $this->settings->get_s3_config();
         
-        // Process WebSaleLines with error handling
-        try {
-            $webSaleLinesFileData = $this->create_csv_export_file('WebSaleLines', $date_param);
-            if (!empty($webSaleLinesFileData)) {
-                $s3_config = $this->settings->get_s3_config();
-                $this->s3_uploader->upload_file(
-                    $s3_config['bucket'] ?: 'directoryofsocialchange',
-                    $webSaleLinesFileData['file_name'],
-                    $webSaleLinesFileData['file_path'],
-                    'FundsOnlineWebsiteSaleLineItems'
-                );
-                $success_count++;
-                $this->log("[$timestamp] WebSaleLines export successful", $log_file);
-            } else {
-                $failed_exports[] = 'WebSaleLines';
-                $this->log("[$timestamp] WebSaleLines export failed - no file created", $log_file);
+        // Process each configured export type
+        foreach ($export_types_config as $export_type) {
+            if (!$export_type['enabled']) {
+                $this->log("[$timestamp] Export type '{$export_type['name']}' disabled - skipping", $log_file);
+                continue;
             }
-        } catch (\Exception $e) {
-            $failed_exports[] = 'WebSaleLines';
-            $this->log("[$timestamp] WebSaleLines export exception: " . $e->getMessage(), $log_file);
+            
+            try {
+                $file_data = $this->create_csv_export_file_for_type($export_type, $date_param);
+                if (!empty($file_data)) {
+                    $s3_folder = $export_type['s3_folder'] ?: sanitize_title($export_type['name']);
+                    $file_prefix = $export_type['file_prefix'] ?: $export_type['name'];
+                    
+                    $this->s3_uploader->upload_file(
+                        $s3_config['bucket'] ?: 'fundsonline-exports',
+                        $file_data['file_name'],
+                        $file_data['file_path'],
+                        $file_prefix,
+                        $s3_folder
+                    );
+                    $success_count++;
+                    $this->log("[$timestamp] Export '{$export_type['name']}' successful", $log_file);
+                } else {
+                    $failed_exports[] = $export_type['name'];
+                    $this->log("[$timestamp] Export '{$export_type['name']}' failed - no file created", $log_file);
+                }
+            } catch (\Exception $e) {
+                $failed_exports[] = $export_type['name'];
+                $this->log("[$timestamp] Export '{$export_type['name']}' exception: " . $e->getMessage(), $log_file);
+            }
         }
         
         // FAILSAFE 4: Handle partial or complete failures
-        if ($success_count === 0) {
-            $this->log("[$timestamp] CRITICAL: All exports failed - scheduling recovery", $log_file);
-            $this->schedule_export_retry('All exports failed');
+        $expected_exports = 0;
+        foreach ($export_types_config as $export_type) {
+            if ($export_type['enabled']) $expected_exports++;
+        }
+        
+        if ($expected_exports === 0) {
+            $this->log("[$timestamp] WARNING: No exports are enabled", $log_file);
+        } elseif ($success_count === 0 && $expected_exports > 0) {
+            $this->log("[$timestamp] CRITICAL: All enabled exports failed - scheduling recovery", $log_file);
+            $this->schedule_export_retry('All enabled exports failed');
             $this->send_failure_alert('Complete export failure', $failed_exports);
-        } elseif ($success_count < 2) {
+        } elseif ($success_count < $expected_exports) {
             $this->log("[$timestamp] WARNING: Partial export failure - some exports succeeded", $log_file);
             $this->send_failure_alert('Partial export failure', $failed_exports);
         } else {
-            $this->log("[$timestamp] SUCCESS: All exports completed successfully", $log_file);
+            $this->log("[$timestamp] SUCCESS: All enabled exports completed successfully", $log_file);
             $this->clear_retry_flags();
         }
         
@@ -254,6 +259,86 @@ class Automation_Manager {
      */
     private function create_csv_export_file_for_date($export_type, $target_date) {
         return $this->create_csv_export_file($export_type, $target_date);
+    }
+    
+    /**
+     * Create CSV export file for specific export type
+     */
+    private function create_csv_export_file_for_type($export_type, $date_param = null) {
+        $log_file = $this->get_log_file();
+        $timestamp = date('Y-m-d H:i:s');
+        
+        $this->log("[$timestamp] Creating export for type: {$export_type['name']}", $log_file);
+        
+        // Use the new CSV Generator for data extraction and CSV creation
+        $file_data = $this->csv_generator->generate_csv($export_type, $date_param);
+        
+        if ($file_data) {
+            $this->log("[$timestamp] CSV file generated successfully for: {$export_type['name']}", $log_file);
+        } else {
+            $this->log("[$timestamp] Failed to generate CSV file for: {$export_type['name']}", $log_file);
+        }
+        
+        return $file_data;
+    }
+    
+    /**
+     * Ensure local folder exists
+     */
+    private function ensure_local_folder_exists($folder_name) {
+        $upload_dir = wp_upload_dir();
+        $folder_path = $upload_dir['basedir'] . '/wc-s3-exports/' . $folder_name;
+        
+        if (!file_exists($folder_path)) {
+            wp_mkdir_p($folder_path);
+        }
+        
+        return $folder_path;
+    }
+    
+    /**
+     * Move file to specified local folder
+     */
+    private function move_file_to_local_folder($file_data, $folder_name) {
+        if (empty($file_data) || empty($file_data['file_path'])) {
+            return $file_data;
+        }
+        
+        $upload_dir = wp_upload_dir();
+        $folder_path = $upload_dir['basedir'] . '/wc-s3-exports/' . $folder_name;
+        
+        // Ensure folder exists
+        $this->ensure_local_folder_exists($folder_name);
+        
+        // Generate new file path in the specified folder
+        $new_file_path = $folder_path . '/' . $file_data['file_name'];
+        
+        // Move the file if it's not already in the correct location
+        if ($file_data['file_path'] !== $new_file_path && file_exists($file_data['file_path'])) {
+            if (rename($file_data['file_path'], $new_file_path)) {
+                $file_data['file_path'] = $new_file_path;
+                $this->log("File moved to local folder: $folder_name", $this->get_log_file());
+            } else {
+                $this->log("Failed to move file to local folder: $folder_name", $this->get_log_file());
+            }
+        }
+        
+        return $file_data;
+    }
+    
+    /**
+     * Map export type to WooCommerce export type
+     */
+    private function map_export_type_to_wc_type($type) {
+        $mapping = array(
+            'orders' => 'WebSales',
+            'order_items' => 'WebSaleLines',
+            'customers' => 'Customers',
+            'products' => 'Products',
+            'coupons' => 'Coupons'
+        );
+        
+        return isset($mapping[$type]) ? $mapping[$type] : false;
     }
     
     /**
@@ -672,9 +757,108 @@ class Automation_Manager {
     }
     
     /**
-     * Setup automation
+     * Setup automation for individual export types
      */
     public function setup_automation() {
+        $export_types_config = $this->settings->get_export_types_config();
+        
+        foreach ($export_types_config as $export_type) {
+            if ($export_type['enabled']) {
+                $this->setup_export_type_automation($export_type);
+            }
+        }
+    }
+    
+    /**
+     * Setup automation for specific export type
+     */
+    private function setup_export_type_automation($export_type) {
+        $frequency = $export_type['frequency'] ?: 'daily';
+        $time = $export_type['time'] ?: '01:00';
+        $type_id = $export_type['id'];
+        
+        // Clear existing schedule for this export type
+        wp_clear_scheduled_hook('wc_s3_export_' . $type_id);
+        
+        // Set up new schedule based on frequency
+        switch ($frequency) {
+            case 'hourly':
+                wp_schedule_event(time(), 'hourly', 'wc_s3_export_' . $type_id);
+                break;
+            case 'daily':
+                $timestamp = strtotime('today ' . $time);
+                if ($timestamp < time()) {
+                    $timestamp = strtotime('tomorrow ' . $time);
+                }
+                wp_schedule_event($timestamp, 'daily', 'wc_s3_export_' . $type_id);
+                break;
+            case 'weekly':
+                $timestamp = strtotime('next monday ' . $time);
+                wp_schedule_event($timestamp, 'weekly', 'wc_s3_export_' . $type_id);
+                break;
+            case 'monthly':
+                $timestamp = strtotime('first day of next month ' . $time);
+                wp_schedule_event($timestamp, 'monthly', 'wc_s3_export_' . $type_id);
+                break;
+        }
+        
+        // Add action hook for this export type
+        add_action('wc_s3_export_' . $type_id, array($this, 'run_export_type_automation'), 10, 1);
+    }
+    
+    /**
+     * Run automation for specific export type
+     */
+    public function run_export_type_automation($type_id) {
+        $export_types_config = $this->settings->get_export_types_config();
+        
+        // Find the export type by ID
+        $export_type = null;
+        foreach ($export_types_config as $type) {
+            if ($type['id'] === $type_id) {
+                $export_type = $type;
+                break;
+            }
+        }
+        
+        if (!$export_type || !$export_type['enabled']) {
+            return;
+        }
+        
+        $log_file = $this->get_log_file();
+        $timestamp = date('Y-m-d H:i:s');
+        
+        $this->log("[$timestamp] Starting export automation for '{$export_type['name']}'", $log_file);
+        
+        try {
+            $file_data = $this->create_csv_export_file_for_type($export_type);
+            
+            if (!empty($file_data)) {
+                $s3_config = $this->settings->get_s3_config();
+                $s3_folder = $export_type['s3_folder'] ?: sanitize_title($export_type['name']);
+                $file_prefix = $export_type['file_prefix'] ?: $export_type['name'];
+                
+                $this->s3_uploader->upload_file(
+                    $s3_config['bucket'] ?: 'fundsonline-exports',
+                    $file_data['file_name'],
+                    $file_data['file_path'],
+                    $file_prefix,
+                    $s3_folder
+                );
+                
+                $this->log("[$timestamp] Export '{$export_type['name']}' completed successfully", $log_file);
+            } else {
+                $this->log("[$timestamp] Export '{$export_type['name']}' failed - no file created", $log_file);
+            }
+        } catch (\Exception $e) {
+            $this->log("[$timestamp] Export '{$export_type['name']}' exception: " . $e->getMessage(), $log_file);
+        }
+    }
+    
+    /**
+     * Setup automation (legacy method for backward compatibility)
+     */
+    public function setup_legacy_automation() {
         try {
             // Check if WooCommerce CSV Export plugin is active
             if (!function_exists('wc_customer_order_csv_export')) {

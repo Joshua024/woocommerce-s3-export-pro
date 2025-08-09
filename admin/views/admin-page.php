@@ -139,7 +139,7 @@ $current_s3_config = $settings->get_s3_config();
         <h3>⚙️ Export Settings</h3>
         <form id="export-settings-form">
             <div class="wc-s3-form-group">
-                <label for="export_frequency">Export Frequency</label>
+                <label for="export_frequency">Default Export Frequency</label>
                 <select id="export_frequency" name="export_frequency">
                     <option value="daily" <?php selected($current_settings['export_frequency'] ?? 'daily', 'daily'); ?>>Daily</option>
                     <option value="weekly" <?php selected($current_settings['export_frequency'] ?? 'daily', 'weekly'); ?>>Weekly</option>
@@ -148,36 +148,142 @@ $current_s3_config = $settings->get_s3_config();
             </div>
             
             <div class="wc-s3-form-group">
-                <label for="export_time">Export Time</label>
+                <label for="export_time">Default Export Time</label>
                 <input type="time" id="export_time" name="export_time" 
-                       value="<?php echo esc_attr($current_settings['export_time'] ?? '02:00'); ?>">
+                       value="<?php echo esc_attr($current_settings['export_time'] ?? '01:00'); ?>">
             </div>
             
-            <div class="wc-s3-form-group">
-                <label for="export_types">Export Types</label>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                    <label style="display: flex; align-items: center; margin: 0;">
-                        <input type="checkbox" name="export_types[]" value="orders" 
-                               <?php checked(in_array('orders', $current_settings['export_types'] ?? array('orders'))); ?> 
-                               style="margin-right: 0.5rem;">
-                        Orders
-                    </label>
-                    <label style="display: flex; align-items: center; margin: 0;">
-                        <input type="checkbox" name="export_types[]" value="customers" 
-                               <?php checked(in_array('customers', $current_settings['export_types'] ?? array('orders'))); ?> 
-                               style="margin-right: 0.5rem;">
-                        Customers
-                    </label>
-                    <label style="display: flex; align-items: center; margin: 0;">
-                        <input type="checkbox" name="export_types[]" value="products" 
-                               <?php checked(in_array('products', $current_settings['export_types'] ?? array())); ?> 
-                               style="margin-right: 0.5rem;">
-                        Products
-                    </label>
-                </div>
+            <button type="submit" class="wc-s3-btn primary">💾 Save Default Settings</button>
+        </form>
+    </div>
+
+    <!-- Export Types Configuration -->
+    <div class="wc-s3-form">
+        <h3>📋 Export Types Configuration</h3>
+        <p>Configure individual settings for each export type. You can add, remove, and configure as many export types as you need.</p>
+        
+        <form id="export-types-form">
+            <div id="export-types-container">
+                <?php
+                $current_export_types_config = $settings->get_export_types_config();
+                if (empty($current_export_types_config)) {
+                    $current_export_types_config = array();
+                }
+                
+                foreach ($current_export_types_config as $index => $export_type): 
+                ?>
+                    <div class="wc-s3-export-type-section" data-index="<?php echo $index; ?>">
+                        <div class="wc-s3-export-type-header">
+                            <h4><?php echo esc_html($export_type['name'] ?: 'New Export Type'); ?></h4>
+                            <button type="button" class="wc-s3-btn error small remove-export-type" onclick="removeExportType(<?php echo $index; ?>)">
+                                🗑️ Remove
+                            </button>
+                        </div>
+                        
+                        <div class="wc-s3-form-row">
+                            <div class="wc-s3-form-group">
+                                <label for="export_type_<?php echo $index; ?>_name">Export Name</label>
+                                <input type="text" id="export_type_<?php echo $index; ?>_name" 
+                                       name="export_types[<?php echo $index; ?>][name]" 
+                                       value="<?php echo esc_attr($export_type['name'] ?? ''); ?>" 
+                                       placeholder="e.g., Web Sales, Customer Data" required>
+                                <p class="description">A descriptive name for this export</p>
+                            </div>
+                            
+                            <div class="wc-s3-form-group">
+                                <label for="export_type_<?php echo $index; ?>_type">Export Type</label>
+                                <select id="export_type_<?php echo $index; ?>_type" 
+                                        name="export_types[<?php echo $index; ?>][type]">
+                                    <option value="orders" <?php selected($export_type['type'] ?? 'orders', 'orders'); ?>>Orders (Web Sales)</option>
+                                    <option value="order_items" <?php selected($export_type['type'] ?? 'orders', 'order_items'); ?>>Order Items (Web Sale Lines)</option>
+                                    <option value="customers" <?php selected($export_type['type'] ?? 'orders', 'customers'); ?>>Customers</option>
+                                    <option value="products" <?php selected($export_type['type'] ?? 'orders', 'products'); ?>>Products</option>
+                                    <option value="coupons" <?php selected($export_type['type'] ?? 'orders', 'coupons'); ?>>Coupons</option>
+                                </select>
+                                <p class="description">The type of data to export</p>
+                            </div>
+                        </div>
+                        
+                        <div class="wc-s3-form-row">
+                            <div class="wc-s3-form-group">
+                                <label for="export_type_<?php echo $index; ?>_file_prefix">File Prefix</label>
+                                <input type="text" id="export_type_<?php echo $index; ?>_file_prefix" 
+                                       name="export_types[<?php echo $index; ?>][file_prefix]" 
+                                       value="<?php echo esc_attr($export_type['file_prefix'] ?? ''); ?>" 
+                                       placeholder="e.g., FundsOnlineWebsiteSales">
+                                <p class="description">Prefix for the exported file name</p>
+                            </div>
+                            
+                            <div class="wc-s3-form-group">
+                                <label for="export_type_<?php echo $index; ?>_s3_folder">S3 Folder</label>
+                                <input type="text" id="export_type_<?php echo $index; ?>_s3_folder" 
+                                       name="export_types[<?php echo $index; ?>][s3_folder]" 
+                                       value="<?php echo esc_attr($export_type['s3_folder'] ?? ''); ?>" 
+                                       placeholder="e.g., web-sales">
+                                <p class="description">Folder name within the S3 bucket</p>
+                            </div>
+                            
+                            <div class="wc-s3-form-group">
+                                <label for="export_type_<?php echo $index; ?>_local_uploads_folder">Local Uploads Folder</label>
+                                <input type="text" id="export_type_<?php echo $index; ?>_local_uploads_folder" 
+                                       name="export_types[<?php echo $index; ?>][local_uploads_folder]" 
+                                       value="<?php echo esc_attr($export_type['local_uploads_folder'] ?? ''); ?>" 
+                                       placeholder="e.g., web-sales">
+                                <p class="description">Folder name in wp-content/uploads/wc-s3-exports/</p>
+                            </div>
+                        </div>
+                        
+                        <div class="wc-s3-form-row">
+                            <div class="wc-s3-form-group">
+                                <label for="export_type_<?php echo $index; ?>_frequency">Export Frequency</label>
+                                <select id="export_type_<?php echo $index; ?>_frequency" 
+                                        name="export_types[<?php echo $index; ?>][frequency]">
+                                    <option value="hourly" <?php selected($export_type['frequency'] ?? 'daily', 'hourly'); ?>>Hourly</option>
+                                    <option value="daily" <?php selected($export_type['frequency'] ?? 'daily', 'daily'); ?>>Daily</option>
+                                    <option value="weekly" <?php selected($export_type['frequency'] ?? 'daily', 'weekly'); ?>>Weekly</option>
+                                    <option value="monthly" <?php selected($export_type['frequency'] ?? 'daily', 'monthly'); ?>>Monthly</option>
+                                </select>
+                            </div>
+                            
+                            <div class="wc-s3-form-group">
+                                <label for="export_type_<?php echo $index; ?>_time">Export Time</label>
+                                <input type="time" id="export_type_<?php echo $index; ?>_time" 
+                                       name="export_types[<?php echo $index; ?>][time]" 
+                                       value="<?php echo esc_attr($export_type['time'] ?? '01:00'); ?>">
+                            </div>
+                            
+                            <div class="wc-s3-form-group">
+                                <label style="display: flex; align-items: center; margin: 0;">
+                                    <input type="checkbox" name="export_types[<?php echo $index; ?>][enabled]" value="1" 
+                                           <?php checked($export_type['enabled'] ?? true); ?> 
+                                           style="margin-right: 0.5rem;">
+                                    Enable this export
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="wc-s3-form-group">
+                            <label for="export_type_<?php echo $index; ?>_description">Description</label>
+                            <textarea id="export_type_<?php echo $index; ?>_description" 
+                                      name="export_types[<?php echo $index; ?>][description]" 
+                                      rows="2" placeholder="Optional description of what this export contains"><?php echo esc_textarea($export_type['description'] ?? ''); ?></textarea>
+                        </div>
+                        
+                        <input type="hidden" name="export_types[<?php echo $index; ?>][id]" 
+                               value="<?php echo esc_attr($export_type['id'] ?? ''); ?>">
+                    </div>
+                <?php endforeach; ?>
             </div>
             
-            <button type="submit" class="wc-s3-btn primary">💾 Save Export Settings</button>
+            <div class="wc-s3-export-type-actions">
+                <button type="button" class="wc-s3-btn secondary" onclick="addExportType()">
+                    ➕ Add New Export Type
+                </button>
+                
+                <button type="submit" class="wc-s3-btn primary">
+                    💾 Save Export Types Configuration
+                </button>
+            </div>
         </form>
     </div>
 
@@ -346,6 +452,148 @@ document.getElementById('export-settings-form').addEventListener('submit', funct
         showNotification('error', 'Save failed: ' + error.message);
     });
 });
+
+// Export Types Form
+document.getElementById('export-types-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    formData.append('action', 'wc_s3_save_export_types_config');
+    formData.append('nonce', wcS3ExportPro.nonce);
+    
+    fetch(wcS3ExportPro.ajaxUrl, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        showNotification(data.success ? 'success' : 'error', data.message);
+        if (data.success) {
+            setTimeout(() => location.reload(), 2000);
+        }
+    })
+    .catch(error => {
+        showNotification('error', 'Save failed: ' + error.message);
+    });
+});
+
+// Add Export Type
+function addExportType() {
+    const container = document.getElementById('export-types-container');
+    const newIndex = container.children.length;
+    
+    const newExportType = `
+        <div class="wc-s3-export-type-section" data-index="${newIndex}">
+            <div class="wc-s3-export-type-header">
+                <h4>New Export Type</h4>
+                <button type="button" class="wc-s3-btn error small remove-export-type" onclick="removeExportType(${newIndex})">
+                    🗑️ Remove
+                </button>
+            </div>
+            
+            <div class="wc-s3-form-row">
+                <div class="wc-s3-form-group">
+                    <label for="export_type_${newIndex}_name">Export Name</label>
+                    <input type="text" id="export_type_${newIndex}_name" 
+                           name="export_types[${newIndex}][name]" 
+                           placeholder="e.g., Web Sales, Customer Data" required>
+                    <p class="description">A descriptive name for this export</p>
+                </div>
+                
+                <div class="wc-s3-form-group">
+                    <label for="export_type_${newIndex}_type">Export Type</label>
+                    <select id="export_type_${newIndex}_type" 
+                            name="export_types[${newIndex}][type]">
+                        <option value="orders">Orders (Web Sales)</option>
+                        <option value="order_items">Order Items (Web Sale Lines)</option>
+                        <option value="customers">Customers</option>
+                        <option value="products">Products</option>
+                        <option value="coupons">Coupons</option>
+                    </select>
+                    <p class="description">The type of data to export</p>
+                </div>
+            </div>
+            
+            <div class="wc-s3-form-row">
+                <div class="wc-s3-form-group">
+                    <label for="export_type_${newIndex}_file_prefix">File Prefix</label>
+                    <input type="text" id="export_type_${newIndex}_file_prefix" 
+                           name="export_types[${newIndex}][file_prefix]" 
+                           placeholder="e.g., FundsOnlineWebsiteSales">
+                    <p class="description">Prefix for the exported file name</p>
+                </div>
+                
+                <div class="wc-s3-form-group">
+                    <label for="export_type_${newIndex}_s3_folder">S3 Folder</label>
+                    <input type="text" id="export_type_${newIndex}_s3_folder" 
+                           name="export_types[${newIndex}][s3_folder]" 
+                           placeholder="e.g., web-sales">
+                    <p class="description">Folder name within the S3 bucket</p>
+                </div>
+                
+                <div class="wc-s3-form-group">
+                    <label for="export_type_${newIndex}_local_uploads_folder">Local Uploads Folder</label>
+                    <input type="text" id="export_type_${newIndex}_local_uploads_folder" 
+                           name="export_types[${newIndex}][local_uploads_folder]" 
+                           placeholder="e.g., web-sales">
+                    <p class="description">Folder name in wp-content/uploads/wc-s3-exports/</p>
+                </div>
+            </div>
+            
+            <div class="wc-s3-form-row">
+                <div class="wc-s3-form-group">
+                    <label for="export_type_${newIndex}_frequency">Export Frequency</label>
+                    <select id="export_type_${newIndex}_frequency" 
+                            name="export_types[${newIndex}][frequency]">
+                        <option value="hourly">Hourly</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+                
+                <div class="wc-s3-form-group">
+                    <label for="export_type_${newIndex}_time">Export Time</label>
+                    <input type="time" id="export_type_${newIndex}_time" 
+                           name="export_types[${newIndex}][time]">
+                </div>
+                
+                <div class="wc-s3-form-group">
+                    <label style="display: flex; align-items: center; margin: 0;">
+                        <input type="checkbox" name="export_types[${newIndex}][enabled]" value="1">
+                        Enable this export
+                    </label>
+                </div>
+            </div>
+            
+            <div class="wc-s3-form-group">
+                <label for="export_type_${newIndex}_description">Description</label>
+                <textarea id="export_type_${newIndex}_description" 
+                          name="export_types[${newIndex}][description]" 
+                          rows="2" placeholder="Optional description of what this export contains"></textarea>
+            </div>
+            
+            <input type="hidden" name="export_types[${newIndex}][id]" 
+                   value="">
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', newExportType);
+}
+
+// Remove Export Type
+function removeExportType(index) {
+    const container = document.getElementById('export-types-container');
+    const exportTypeSection = container.children[index];
+    
+    if (confirm('Are you sure you want to remove this export type?')) {
+        exportTypeSection.remove();
+        // Re-index the remaining sections
+        for (let i = 0; i < container.children.length; i++) {
+            container.children[i].dataset.index = i;
+        }
+    }
+}
 
 // Show Notification
 function showNotification(type, message) {

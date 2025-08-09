@@ -76,7 +76,7 @@ class S3_Uploader {
     /**
      * Upload file to S3
      */
-    public function upload_file($bucket, $filename, $file_path, $directory) {
+    public function upload_file($bucket, $filename, $file_path, $directory, $folder = '') {
         $log_file = $this->get_log_file();
         $timestamp = date('Y-m-d H:i:s');
         
@@ -87,6 +87,13 @@ class S3_Uploader {
             $this->log("[$timestamp] ERROR: Missing S3 upload parameters", $log_file);
             return false;
         }
+        
+        // Build S3 key with optional folder
+        $s3_key = $directory;
+        if (!empty($folder)) {
+            $s3_key = $folder . '/' . $directory;
+        }
+        $s3_key .= '/' . $filename;
         
         // Verify file exists and is readable
         if (!file_exists($file_path)) {
@@ -121,7 +128,7 @@ class S3_Uploader {
             try {
                 $result = $this->s3_client->putObject([
                     'Bucket' => $bucket,
-                    'Key' => $directory . '/' . $filename,
+                    'Key' => $s3_key,
                     'SourceFile' => $file_path,
                 ]);
                 
