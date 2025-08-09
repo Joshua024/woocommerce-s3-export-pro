@@ -46,7 +46,7 @@ class CSV_Generator {
         }
         
         // Generate CSV file
-        $file_data = $this->create_csv_file($data, $field_mappings, $export_type);
+        $file_data = $this->create_csv_file($data, $field_mappings, $export_type, $date_param);
         
         if ($file_data) {
             $this->log("[$timestamp] CSV file generated successfully for: {$export_type['name']}", $log_file);
@@ -97,6 +97,8 @@ class CSV_Generator {
         foreach ($orders as $order) {
             $order_data = array(
                 'order_id' => $order->get_id(),
+                'order_number' => $order->get_order_number(),
+                'order_number_formatted' => $order->get_order_number(),
                 'order_date' => $order->get_date_created()->format('Y-m-d H:i:s'),
                 'order_status' => $order->get_status(),
                 'customer_id' => $order->get_customer_id(),
@@ -127,6 +129,13 @@ class CSV_Generator {
                 'order_discount' => $order->get_total_discount(),
                 'order_currency' => $order->get_currency(),
                 'customer_note' => $order->get_customer_note(),
+                'shipping_total' => $order->get_shipping_total(),
+                'shipping_tax_total' => $order->get_total_tax(),
+                'fee_total' => $order->get_total_fees(),
+                'tax_total' => $order->get_total_tax(),
+                'discount_total' => $order->get_total_discount(),
+                'refunded_total' => $order->get_total_refunded(),
+                'shipping_method' => $order->get_shipping_method(),
                 'order_meta' => $this->get_order_meta($order)
             );
             
@@ -155,9 +164,27 @@ class CSV_Generator {
         
         foreach ($orders as $order) {
             foreach ($order->get_items() as $item_id => $item) {
-                $product_id = $item->get_product_id();
-                $product = \wc_get_product($product_id);
-                $variation_id = $item->get_variation_id();
+                // Use proper WooCommerce methods with error handling
+                $product_id = 0;
+                $variation_id = 0;
+                
+                try {
+                    if (is_callable(array($item, 'get_product_id'))) {
+                        $product_id = $item->get_product_id();
+                    }
+                } catch (\Exception $e) {
+                    $product_id = 0;
+                }
+                
+                try {
+                    if (is_callable(array($item, 'get_variation_id'))) {
+                        $variation_id = $item->get_variation_id();
+                    }
+                } catch (\Exception $e) {
+                    $variation_id = 0;
+                }
+                
+                $product = $product_id ? \wc_get_product($product_id) : null;
                 
                 $item_data = array(
                     'order_id' => $order->get_id(),
@@ -169,12 +196,45 @@ class CSV_Generator {
                     'product_variation_sku' => $variation_id ? \wc_get_product($variation_id)->get_sku() : '',
                     'product_variation_attributes' => $this->get_variation_attributes($item),
                     'quantity' => $item->get_quantity(),
-                    'line_total' => $item->get_total(),
-                    'line_subtotal' => $item->get_subtotal(),
-                    'line_tax' => $item->get_total_tax(),
-                    'line_subtotal_tax' => $item->get_subtotal_tax(),
+                    'line_total' => 0,
+                    'line_subtotal' => 0,
+                    'line_tax' => 0,
+                    'line_subtotal_tax' => 0,
                     'product_meta' => $this->get_item_meta($item)
                 );
+                
+                // Try to get totals with error handling
+                try {
+                    if (is_callable(array($item, 'get_total'))) {
+                        $item_data['line_total'] = $item->get_total();
+                    }
+                } catch (\Exception $e) {
+                    $item_data['line_total'] = 0;
+                }
+                
+                try {
+                    if (is_callable(array($item, 'get_subtotal'))) {
+                        $item_data['line_subtotal'] = $item->get_subtotal();
+                    }
+                } catch (\Exception $e) {
+                    $item_data['line_subtotal'] = 0;
+                }
+                
+                try {
+                    if (is_callable(array($item, 'get_total_tax'))) {
+                        $item_data['line_tax'] = $item->get_total_tax();
+                    }
+                } catch (\Exception $e) {
+                    $item_data['line_tax'] = 0;
+                }
+                
+                try {
+                    if (is_callable(array($item, 'get_subtotal_tax'))) {
+                        $item_data['line_subtotal_tax'] = $item->get_subtotal_tax();
+                    }
+                } catch (\Exception $e) {
+                    $item_data['line_subtotal_tax'] = 0;
+                }
                 
                 $data[] = $item_data;
             }
@@ -278,10 +338,17 @@ class CSV_Generator {
             'return' => 'objects'
         );
         
-        $coupons = \wc_get_coupons($args);
+        // Use get_posts for coupons since wc_get_coupons might not exist
+        $coupon_posts = get_posts(array(
+            'post_type' => 'shop_coupon',
+            'post_status' => 'publish',
+            'numberposts' => -1
+        ));
+        
         $data = array();
         
-        foreach ($coupons as $coupon) {
+        foreach ($coupon_posts as $coupon_post) {
+            $coupon = new \WC_Coupon($coupon_post->ID);
             $coupon_data = array(
                 'coupon_id' => $coupon->get_id(),
                 'coupon_code' => $coupon->get_code(),
@@ -311,15 +378,32 @@ class CSV_Generator {
     /**
      * Create CSV file from data
      */
-    private function create_csv_file($data, $field_mappings, $export_type) {
+    private function create_csv_file($data, $field_mappings, $export_type, $date_param = null) {
         if (empty($data)) {
             return false;
         }
         
-        // Generate filename
-        $day = date('d');
-        $month = date('m');
-        $year = date('Y');
+        $log_file = $this->get_log_file();
+        $timestamp = date('Y-m-d H:i:s');
+        
+        // Generate filename with date if provided
+        if ($date_param) {
+            $date_obj = \DateTime::createFromFormat('Y-m-d', $date_param, new \DateTimeZone('Europe/London'));
+            if ($date_obj) {
+                $day = $date_obj->format('d');
+                $month = $date_obj->format('m');
+                $year = $date_obj->format('Y');
+            } else {
+                $day = date('d');
+                $month = date('m');
+                $year = date('Y');
+            }
+        } else {
+            $day = date('d');
+            $month = date('m');
+            $year = date('Y');
+        }
+        
         $filename = "FO-{$export_type['name']}-{$day}-{$month}-{$year}.csv";
         
         // Create uploads directory
@@ -333,10 +417,17 @@ class CSV_Generator {
         
         $file_path = $folder_path . '/' . $filename;
         
+        // Check if file already exists
+        if (file_exists($file_path)) {
+            $this->log("[$timestamp] CSV file already exists: {$filename}. Skipping generation.", $log_file);
+            return false;
+        }
+        
         // Create CSV file
         $file_handle = fopen($file_path, 'w');
         
         if (!$file_handle) {
+            $this->log("[$timestamp] Failed to open file for writing: $file_path", $log_file);
             return false;
         }
         
@@ -354,6 +445,8 @@ class CSV_Generator {
         }
         
         fclose($file_handle);
+        
+        $this->log("[$timestamp] CSV file created successfully: $file_path", $log_file);
         
         return array(
             'file_name' => $filename,

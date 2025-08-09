@@ -24,12 +24,18 @@ class Automation_Manager {
     private $csv_generator;
     
     /**
+     * Export History instance
+     */
+    private $export_history;
+    
+    /**
      * Constructor
      */
     public function __construct() {
         $this->settings = new Settings();
         $this->s3_uploader = new S3_Uploader();
         $this->csv_generator = new CSV_Generator();
+        $this->export_history = new Export_History();
     }
     
     /**
@@ -136,52 +142,131 @@ class Automation_Manager {
     }
     
     /**
-     * Run manual export for specific date
+     * Run manual export for a specific date or date range
      */
-    public function run_manual_export($target_date) {
-        // Parse and validate date
-        $date_obj = \DateTime::createFromFormat('Y-m-d', $target_date, new \DateTimeZone('Europe/London'));
-        if (!$date_obj) {
-            $this->log_error("Invalid date format for manual export: $target_date");
-            return false;
-        }
-        
+    public function run_manual_export($target_date = null, $end_date = null, $export_types = array()) {
         $log_file = $this->get_log_file();
         $timestamp = date('Y-m-d H:i:s');
         
-        $this->log("[$timestamp] Manual export started for date: $target_date", $log_file);
+        // Handle date range
+        if ($end_date && $target_date) {
+            $start_date = $target_date;
+            $end_date = $end_date;
+            $this->log("[$timestamp] Manual export started for date range: $start_date to $end_date", $log_file);
+        } else {
+            $start_date = $target_date ?: date('Y-m-d');
+            $end_date = $start_date;
+            $this->log("[$timestamp] Manual export started for date: $start_date", $log_file);
+        }
         
-        // Create exports for both WebSales and WebSaleLines
-        $webSalesFileData = $this->create_csv_export_file_for_date('WebSales', $target_date);
-        $webSaleLinesFileData = $this->create_csv_export_file_for_date('WebSaleLines', $target_date);
+        // Validate dates
+        $start_obj = \DateTime::createFromFormat('Y-m-d', $start_date, new \DateTimeZone('Europe/London'));
+        $end_obj = \DateTime::createFromFormat('Y-m-d', $end_date, new \DateTimeZone('Europe/London'));
+        
+        if (!$start_obj || !$end_obj) {
+            $this->log_error("Invalid date format for manual export: $start_date to $end_date");
+            return false;
+        }
+        
+        if ($start_obj > $end_obj) {
+            $this->log_error("Start date cannot be after end date: $start_date to $end_date");
+            return false;
+        }
         
         $success_count = 0;
+        $total_files = 0;
         
-        if (!empty($webSalesFileData)) {
-            $s3_config = $this->settings->get_s3_config();
-            $this->s3_uploader->upload_file(
-                $s3_config['bucket'] ?: 'directoryofsocialchange',
-                $webSalesFileData['file_name'],
-                $webSalesFileData['file_path'],
-                'FundsOnlineWebsiteSales'
-            );
-            $success_count++;
-            $this->log("[$timestamp] WebSales export successful for $target_date: " . $webSalesFileData['file_name'], $log_file);
-        }
-
-        if (!empty($webSaleLinesFileData)) {
-            $s3_config = $this->settings->get_s3_config();
-            $this->s3_uploader->upload_file(
-                $s3_config['bucket'] ?: 'directoryofsocialchange',
-                $webSaleLinesFileData['file_name'],
-                $webSaleLinesFileData['file_path'],
-                'FundsOnlineWebsiteSaleLineItems'
-            );
-            $success_count++;
-            $this->log("[$timestamp] WebSaleLines export successful for $target_date: " . $webSaleLinesFileData['file_name'], $log_file);
+        // Generate date range
+        $current_date = clone $start_obj;
+        $date_range = array();
+        
+        while ($current_date <= $end_obj) {
+            $date_range[] = $current_date->format('Y-m-d');
+            $current_date->add(new \DateInterval('P1D'));
         }
         
-        $this->log("[$timestamp] Manual export completed for $target_date - $success_count files created", $log_file);
+        // If no specific export types provided, use all configured types
+        if (empty($export_types)) {
+            $export_types_config = $this->settings->get_export_types_config();
+            foreach ($export_types_config as $export_type) {
+                if ($export_type['enabled']) {
+                    $export_types[] = $export_type['id'];
+                }
+            }
+        }
+        
+        foreach ($date_range as $date) {
+            foreach ($export_types as $export_type_id) {
+                $export_type_config = $this->get_export_type_config($export_type_id);
+                if (!$export_type_config) {
+                    continue;
+                }
+                
+                // Check for duplicate export
+                if ($this->export_history->export_exists($export_type_id, $date, $export_type_config['name'])) {
+                    $this->log("[$timestamp] Export already exists for $export_type_id on $date - skipping", $log_file);
+                    continue;
+                }
+                
+                // Create export file
+                $file_data = $this->create_csv_export_file_for_type($export_type_config, $date);
+                
+                if (!empty($file_data)) {
+                    // Validate file integrity
+                    $validation = $this->export_history->validate_file_integrity($file_data['file_path']);
+                    if (!$validation['valid']) {
+                        $this->log("[$timestamp] File validation failed for $export_type_id on $date: " . $validation['error'], $log_file);
+                        continue;
+                    }
+                    
+                    // Upload to S3
+                    $s3_config = $this->settings->get_s3_config();
+                    $s3_folder = $export_type_config['s3_folder'] ?: sanitize_title($export_type_config['name']);
+                    $file_prefix = $export_type_config['file_prefix'] ?: $export_type_config['name'];
+                    
+                    $upload_result = $this->s3_uploader->upload_file(
+                        $s3_config['bucket'] ?: 'fundsonline-exports',
+                        $file_data['file_name'],
+                        $file_data['file_path'],
+                        $file_prefix,
+                        $s3_folder
+                    );
+                    
+                    if ($upload_result) {
+                        // Add to export history
+                        $this->export_history->add_export_record(
+                            $export_type_id,
+                            $date,
+                            $file_data['file_name'],
+                            $file_data['file_path'],
+                            $export_type_config['name'],
+                            'completed'
+                        );
+                        
+                        $success_count++;
+                        $this->log("[$timestamp] Export successful for $export_type_id on $date: " . $file_data['file_name'], $log_file);
+                    } else {
+                        // Add failed record to history
+                        $this->export_history->add_export_record(
+                            $export_type_id,
+                            $date,
+                            $file_data['file_name'],
+                            $file_data['file_path'],
+                            $export_type_config['name'],
+                            'failed'
+                        );
+                        
+                        $this->log("[$timestamp] S3 upload failed for $export_type_id on $date: " . $file_data['file_name'], $log_file);
+                    }
+                } else {
+                    $this->log("[$timestamp] Failed to create export file for $export_type_id on $date", $log_file);
+                }
+                
+                $total_files++;
+            }
+        }
+        
+        $this->log("[$timestamp] Manual export completed - $success_count/$total_files files created successfully", $log_file);
         return $success_count;
     }
     
@@ -916,5 +1001,20 @@ class Automation_Manager {
                 'message' => 'Setup failed: ' . $e->getMessage()
             );
         }
+    }
+
+    /**
+     * Get export type configuration by ID
+     */
+    private function get_export_type_config($export_type_id) {
+        $export_types_config = $this->settings->get_export_types_config();
+        
+        foreach ($export_types_config as $export_type) {
+            if ($export_type['id'] === $export_type_id) {
+                return $export_type;
+            }
+        }
+        
+        return false;
     }
 } 

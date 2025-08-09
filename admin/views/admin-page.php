@@ -286,7 +286,7 @@ function get_data_source_options($export_type, $selected_value = '') {
             🔗 Test S3 Connection
         </button>
         
-        <button class="wc-s3-btn secondary" onclick="runManualExport()">
+        <button class="wc-s3-btn secondary" onclick="showManualExportModal()">
             <span class="wc-s3-loading" id="export-loading" style="display: none;"></span>
             📤 Run Manual Export
         </button>
@@ -298,6 +298,125 @@ function get_data_source_options($export_type, $selected_value = '') {
         <button class="wc-s3-btn warning" onclick="viewLogs()">
             📋 View Logs
         </button>
+        
+        <button class="wc-s3-btn info" onclick="showExportHistory()">
+            📊 Export History
+        </button>
+    </div>
+
+    <!-- Manual Export Modal -->
+    <div id="manual-export-modal" class="wc-s3-modal" style="display: none;">
+        <div class="wc-s3-modal-content">
+            <div class="wc-s3-modal-header">
+                <h3>📤 Manual Export</h3>
+                <span class="wc-s3-modal-close" onclick="closeManualExportModal()">&times;</span>
+            </div>
+            <div class="wc-s3-modal-body">
+                <form id="manual-export-form">
+                    <div class="wc-s3-form-group">
+                        <label for="export_start_date">Start Date</label>
+                        <input type="date" id="export_start_date" name="export_start_date" 
+                               value="<?php echo date('Y-m-d'); ?>" required>
+                    </div>
+                    
+                    <div class="wc-s3-form-group">
+                        <label for="export_end_date">End Date (Optional - Leave empty for single date)</label>
+                        <input type="date" id="export_end_date" name="export_end_date" 
+                               value="" placeholder="Leave empty for single date">
+                    </div>
+                    
+                    <div class="wc-s3-form-group">
+                        <label for="export_types">Export Types</label>
+                        <div class="wc-s3-checkbox-group">
+                            <?php
+                            $export_types_config = $settings->get_export_types_config();
+                            foreach ($export_types_config as $export_type) {
+                                if ($export_type['enabled']) {
+                                    echo '<label class="wc-s3-checkbox">';
+                                    echo '<input type="checkbox" name="export_types[]" value="' . esc_attr($export_type['id']) . '" checked>';
+                                    echo '<span class="checkmark"></span>';
+                                    echo esc_html($export_type['name']);
+                                    echo '</label>';
+                                }
+                            }
+                            ?>
+                        </div>
+                    </div>
+                    
+                    <div class="wc-s3-form-group">
+                        <label>
+                            <input type="checkbox" id="force_export" name="force_export" value="1">
+                            Force Export (Skip duplicate check)
+                        </label>
+                    </div>
+                    
+                    <div class="wc-s3-modal-actions">
+                        <button type="button" class="wc-s3-btn secondary" onclick="closeManualExportModal()">Cancel</button>
+                        <button type="submit" class="wc-s3-btn primary">
+                            <span class="wc-s3-loading" id="manual-export-loading" style="display: none;"></span>
+                            📤 Run Export
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export History Modal -->
+    <div id="export-history-modal" class="wc-s3-modal" style="display: none;">
+        <div class="wc-s3-modal-content wc-s3-modal-large">
+            <div class="wc-s3-modal-header">
+                <h3>📊 Export History</h3>
+                <span class="wc-s3-modal-close" onclick="closeExportHistoryModal()">&times;</span>
+            </div>
+            <div class="wc-s3-modal-body">
+                <div class="wc-s3-history-filters">
+                    <div class="wc-s3-form-group">
+                        <label for="history_start_date">Start Date</label>
+                        <input type="date" id="history_start_date" name="history_start_date" 
+                               value="<?php echo date('Y-m-d', strtotime('-30 days')); ?>">
+                    </div>
+                    
+                    <div class="wc-s3-form-group">
+                        <label for="history_end_date">End Date</label>
+                        <input type="date" id="history_end_date" name="history_end_date" 
+                               value="<?php echo date('Y-m-d'); ?>">
+                    </div>
+                    
+                    <div class="wc-s3-form-group">
+                        <label for="history_export_type">Export Type</label>
+                        <select id="history_export_type" name="history_export_type">
+                            <option value="">All Types</option>
+                            <?php
+                            foreach ($export_types_config as $export_type) {
+                                echo '<option value="' . esc_attr($export_type['id']) . '">' . esc_html($export_type['name']) . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    
+                    <button type="button" class="wc-s3-btn primary" onclick="loadExportHistory()">🔍 Filter</button>
+                </div>
+                
+                <div id="export-history-table" class="wc-s3-table-container">
+                    <table class="wc-s3-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Export Type</th>
+                                <th>File Name</th>
+                                <th>Status</th>
+                                <th>File Size</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="export-history-tbody">
+                            <!-- History data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- S3 Configuration -->
@@ -627,24 +746,51 @@ function testS3Connection() {
 }
 
 // Manual Export
+function showManualExportModal() {
+    document.getElementById('manual-export-modal').style.display = 'block';
+}
+
+function closeManualExportModal() {
+    document.getElementById('manual-export-modal').style.display = 'none';
+    document.getElementById('manual-export-form').reset();
+}
+
 function runManualExport() {
-    const loading = document.getElementById('export-loading');
+    const form = document.getElementById('manual-export-form');
+    const formData = new FormData(form);
+    const loading = document.getElementById('manual-export-loading');
     const button = loading.parentElement;
+    
+    // Validate form
+    const startDate = formData.get('export_start_date');
+    const endDate = formData.get('export_end_date');
+    
+    if (!startDate) {
+        showNotification('error', 'Please select a start date.');
+        return;
+    }
+    
+    if (endDate && new Date(endDate) < new Date(startDate)) {
+        showNotification('error', 'End date cannot be before start date.');
+        return;
+    }
     
     loading.style.display = 'inline-flex';
     button.disabled = true;
     
+    // Add action and nonce
+    formData.append('action', 'wc_s3_run_manual_export');
+    formData.append('nonce', wcS3ExportPro.nonce);
+    
     fetch(wcS3ExportPro.ajaxUrl, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'action=wc_s3_run_manual_export&nonce=' + wcS3ExportPro.nonce
+        body: formData
     })
     .then(response => response.json())
     .then(data => {
         showNotification(data.success ? 'success' : 'error', data.message);
         if (data.success) {
+            closeManualExportModal();
             setTimeout(() => location.reload(), 2000);
         }
     })
@@ -656,6 +802,12 @@ function runManualExport() {
         button.disabled = false;
     });
 }
+
+// Manual Export Form
+document.getElementById('manual-export-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    runManualExport();
+});
 
 // Setup Automation
 function setupAutomation() {
@@ -683,6 +835,111 @@ function setupAutomation() {
 // View Logs
 function viewLogs() {
     window.open('<?php echo admin_url('admin.php?page=wc-s3-export-pro&tab=logs'); ?>', '_blank');
+}
+
+// Export History
+function showExportHistory() {
+    document.getElementById('export-history-modal').style.display = 'block';
+    loadExportHistory(); // Load initial history on modal open
+}
+
+function closeExportHistoryModal() {
+    document.getElementById('export-history-modal').style.display = 'none';
+    document.getElementById('history_start_date').value = '<?php echo date('Y-m-d', strtotime('-30 days')); ?>';
+    document.getElementById('history_end_date').value = '<?php echo date('Y-m-d'); ?>';
+    document.getElementById('history_export_type').value = '';
+    document.getElementById('export-history-tbody').innerHTML = ''; // Clear history table
+}
+
+function loadExportHistory() {
+    const startDate = document.getElementById('history_start_date').value;
+    const endDate = document.getElementById('history_end_date').value;
+    const exportType = document.getElementById('history_export_type').value;
+
+    const tbody = document.getElementById('export-history-tbody');
+    tbody.innerHTML = '<tr><td colspan="6" class="wc-s3-loading">Loading export history...</td></tr>';
+
+    fetch(wcS3ExportPro.ajaxUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'action=wc_s3_get_export_history&nonce=' + wcS3ExportPro.nonce + 
+              '&start_date=' + startDate + 
+              '&end_date=' + endDate + 
+              '&export_type=' + exportType
+    })
+    .then(response => response.json())
+    .then(data => {
+        tbody.innerHTML = '';
+        if (data.success && data.data && data.data.length > 0) {
+            data.data.forEach(item => {
+                const row = document.createElement('tr');
+                const statusClass = item.status === 'completed' ? 'success' : item.status === 'failed' ? 'error' : 'warning';
+                const fileSize = item.file_size ? formatFileSize(item.file_size) : 'N/A';
+                
+                row.innerHTML = `
+                    <td>${item.date}</td>
+                    <td>${item.export_type_name || item.export_type}</td>
+                    <td>${item.file_name}</td>
+                    <td><span class="wc-s3-status ${statusClass}">${item.status}</span></td>
+                    <td>${fileSize}</td>
+                    <td>
+                        ${item.file_exists ? `<button type="button" class="wc-s3-btn info small" onclick="downloadExportFile('${item.file_path}')">Download</button>` : '<span class="wc-s3-status error">File not found</span>'}
+                        <button type="button" class="wc-s3-btn warning small" onclick="deleteExportRecord('${item.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" class="wc-s3-no-data">No export history found for the selected date range.</td></tr>';
+        }
+    })
+    .catch(error => {
+        tbody.innerHTML = '<tr><td colspan="6" class="wc-s3-error">Error loading export history: ' + error.message + '</td></tr>';
+        showNotification('error', 'Error loading export history: ' + error.message);
+    });
+}
+
+function downloadExportFile(filePath) {
+    const link = document.createElement('a');
+    link.href = wcS3ExportPro.ajaxUrl + '?action=wc_s3_download_export_file&nonce=' + wcS3ExportPro.nonce + '&file_path=' + encodeURIComponent(filePath);
+    link.download = filePath.split('/').pop(); // Suggest a filename
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function deleteExportRecord(recordId) {
+    if (!confirm('Are you sure you want to delete this export record? This will also delete the associated file if it exists.')) {
+        return;
+    }
+    
+    fetch(wcS3ExportPro.ajaxUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'action=wc_s3_delete_export_record&nonce=' + wcS3ExportPro.nonce + '&record_id=' + recordId
+    })
+    .then(response => response.json())
+    .then(data => {
+        showNotification(data.success ? 'success' : 'error', data.message);
+        if (data.success) {
+            loadExportHistory(); // Reload the history
+        }
+    })
+    .catch(error => {
+        showNotification('error', 'Error deleting export record: ' + error.message);
+    });
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
 // S3 Configuration Form

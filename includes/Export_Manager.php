@@ -54,7 +54,7 @@ class Export_Manager {
         add_action('wc_s3_export_health_check', array($this, 'run_health_check'));
         add_action('wc_s3_export_automation', array($this, 'run_export_automation'));
         
-        // AJAX hooks
+        // AJAX handlers
         add_action('wp_ajax_wc_s3_test_s3_connection', array($this, 'ajax_test_s3_connection'));
         add_action('wp_ajax_wc_s3_run_manual_export', array($this, 'ajax_run_manual_export'));
         add_action('wp_ajax_wc_s3_get_export_status', array($this, 'ajax_get_export_status'));
@@ -66,6 +66,9 @@ class Export_Manager {
         add_action('wp_ajax_wc_s3_remove_export_type', array($this, 'ajax_remove_export_type'));
         add_action('wp_ajax_wc_s3_setup_automation', array($this, 'ajax_setup_automation'));
         add_action('wp_ajax_wc_s3_get_log_content', array($this, 'ajax_get_log_content'));
+        add_action('wp_ajax_wc_s3_get_export_history', array($this, 'ajax_get_export_history'));
+        add_action('wp_ajax_wc_s3_delete_export_record', array($this, 'ajax_delete_export_record'));
+        add_action('wp_ajax_wc_s3_download_export_file', array($this, 'ajax_download_export_file'));
         
         // WP-CLI commands
         if (defined('WP_CLI') && WP_CLI) {
@@ -219,10 +222,132 @@ class Export_Manager {
             wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
         }
         
-        $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : date('Y-m-d');
-        $result = $this->automation_manager->run_manual_export($date);
+        $start_date = isset($_POST['export_start_date']) ? sanitize_text_field($_POST['export_start_date']) : date('Y-m-d');
+        $end_date = isset($_POST['export_end_date']) ? sanitize_text_field($_POST['export_end_date']) : null;
+        $export_types = isset($_POST['export_types']) ? array_map('sanitize_text_field', $_POST['export_types']) : array();
+        $force_export = isset($_POST['force_export']) ? (bool)$_POST['force_export'] : false;
         
-        wp_send_json($result);
+        // If force export is enabled, we need to modify the export history behavior
+        if ($force_export) {
+            // This would require modifying the Automation_Manager to skip duplicate checks
+            // For now, we'll just proceed with the normal export
+        }
+        
+        $result = $this->automation_manager->run_manual_export($start_date, $end_date, $export_types);
+        
+        if ($result !== false) {
+            wp_send_json_success(array(
+                'message' => sprintf('Manual export completed successfully. %d files created.', $result),
+                'files_created' => $result
+            ));
+        } else {
+            wp_send_json_error(array('message' => 'Manual export failed. Please check the logs for details.'));
+        }
+    }
+    
+    /**
+     * AJAX: Get export history
+     */
+    public function ajax_get_export_history() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $start_date = isset($_POST['start_date']) ? sanitize_text_field($_POST['start_date']) : date('Y-m-d', strtotime('-30 days'));
+        $end_date = isset($_POST['end_date']) ? sanitize_text_field($_POST['end_date']) : date('Y-m-d');
+        $export_type = isset($_POST['export_type']) ? sanitize_text_field($_POST['export_type']) : '';
+        
+        $export_history = new Export_History();
+        
+        if (!empty($export_type)) {
+            $history = $export_history->get_export_history_for_type($export_type);
+        } else {
+            $history = $export_history->get_export_history_for_date_range($start_date, $end_date);
+        }
+        
+        // Format the history data for display
+        $formatted_history = array();
+        foreach ($history as $record) {
+            $formatted_history[] = array(
+                'id' => $record['id'],
+                'date' => $record['date'],
+                'export_type' => $record['export_type'],
+                'export_type_name' => $record['export_name'] ?: $record['export_type'],
+                'file_name' => $record['file_name'],
+                'file_path' => $record['file_path'],
+                'status' => $record['status'],
+                'file_size' => $record['file_size'],
+                'file_exists' => $record['file_exists'],
+                'created_at' => $record['created_at']
+            );
+        }
+        
+        wp_send_json_success($formatted_history);
+    }
+    
+    /**
+     * AJAX: Delete export record
+     */
+    public function ajax_delete_export_record() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $record_id = isset($_POST['record_id']) ? sanitize_text_field($_POST['record_id']) : '';
+        
+        if (empty($record_id)) {
+            wp_send_json_error(array('message' => 'Record ID is required.'));
+        }
+        
+        $export_history = new Export_History();
+        $result = $export_history->delete_export_record($record_id);
+        
+        if ($result) {
+            wp_send_json_success(array('message' => 'Export record deleted successfully.'));
+        } else {
+            wp_send_json_error(array('message' => 'Failed to delete export record.'));
+        }
+    }
+    
+    /**
+     * AJAX: Download export file
+     */
+    public function ajax_download_export_file() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        $file_path = isset($_GET['file_path']) ? sanitize_text_field($_GET['file_path']) : '';
+        
+        if (empty($file_path) || !file_exists($file_path)) {
+            wp_die(__('File not found.', 'wc-s3-export-pro'));
+        }
+        
+        // Security check: ensure the file is within the uploads directory
+        $upload_dir = wp_upload_dir();
+        $real_file_path = realpath($file_path);
+        $real_upload_dir = realpath($upload_dir['basedir']);
+        
+        if (strpos($real_file_path, $real_upload_dir) !== 0) {
+            wp_die(__('Access denied.', 'wc-s3-export-pro'));
+        }
+        
+        // Set headers for file download
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . basename($file_path) . '"');
+        header('Content-Length: ' . filesize($file_path));
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
+        
+        // Output file content
+        readfile($file_path);
+        exit;
     }
     
     /**
