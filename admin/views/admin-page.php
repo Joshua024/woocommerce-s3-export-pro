@@ -892,7 +892,10 @@ function addFieldRow(exportTypeIndex) {
 
 function removeFieldRow(exportTypeIndex, fieldIndex) {
     const tbody = document.getElementById(`field-mapping-tbody-${exportTypeIndex}`);
-    const row = tbody.querySelector(`tr[data-field-index="${fieldIndex}"]`);
+    const rows = tbody.querySelectorAll('tr');
+    
+    // Find the row by index (since fieldIndex is the position, not the data attribute)
+    const row = rows[fieldIndex];
     
     if (row && confirm('Are you sure you want to remove this field?')) {
         row.remove();
