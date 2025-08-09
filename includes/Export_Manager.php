@@ -451,7 +451,31 @@ class Export_Manager {
         
         $export_types = $_POST['export_types'] ?? array();
         
-        $result = $this->settings->update_export_types_config($export_types);
+        // Sanitize the export types data
+        $sanitized_export_types = array();
+        
+        if (is_array($export_types)) {
+            foreach ($export_types as $index => $export_type) {
+                // Generate ID if not present
+                $id = !empty($export_type['id']) ? sanitize_text_field($export_type['id']) : sanitize_title($export_type['name'] ?? 'export_type') . '_' . time();
+                
+                $sanitized_export_types[] = array(
+                    'id' => $id,
+                    'name' => sanitize_text_field($export_type['name'] ?? ''),
+                    'type' => sanitize_text_field($export_type['type'] ?? 'orders'),
+                    'enabled' => (bool) ($export_type['enabled'] ?? false),
+                    'frequency' => sanitize_text_field($export_type['frequency'] ?? 'daily'),
+                    'time' => sanitize_text_field($export_type['time'] ?? '01:00'),
+                    's3_folder' => sanitize_text_field($export_type['s3_folder'] ?? ''),
+                    'local_uploads_folder' => sanitize_text_field($export_type['local_uploads_folder'] ?? ''),
+                    'file_prefix' => sanitize_text_field($export_type['file_prefix'] ?? ''),
+                    'description' => sanitize_textarea_field($export_type['description'] ?? ''),
+                    'field_mappings' => $this->settings->sanitize_field_mappings($export_type['field_mappings'] ?? [], $export_type['type'] ?? 'orders')
+                );
+            }
+        }
+        
+        $result = $this->settings->update_export_types_config($sanitized_export_types);
         
         if ($result) {
             // Set up automation for the new configuration

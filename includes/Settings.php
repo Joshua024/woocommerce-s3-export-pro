@@ -41,36 +41,69 @@ class Settings {
     const DEFAULT_FIELD_MAPPINGS = [
         'orders' => [
             'order_id' => 'Order ID',
+            'order_number' => 'Order Number',
+            'order_number_formatted' => 'Order Number (Formatted)',
             'order_date' => 'Order Date',
-            'order_status' => 'Order Status',
+            'status' => 'Order Status',
+            'shipping_total' => 'Shipping Total',
+            'shipping_tax_total' => 'Shipping Tax Total',
+            'fee_total' => 'Fee Total',
+            'fee_tax_total' => 'Fee Tax Total',
+            'tax_total' => 'Tax Total',
+            'discount_total' => 'Discount Total',
+            'order_total' => 'Order Total',
+            'refunded_total' => 'Refunded Total',
+            'order_currency' => 'Order Currency',
+            'payment_method' => 'Payment Method',
+            'shipping_method' => 'Shipping Method',
             'customer_id' => 'Customer ID',
             'billing_first_name' => 'Billing First Name',
             'billing_last_name' => 'Billing Last Name',
+            'billing_full_name' => 'Billing Full Name',
+            'billing_company' => 'Billing Company',
+            'vat_number' => 'VAT Number',
             'billing_email' => 'Billing Email',
             'billing_phone' => 'Billing Phone',
             'billing_address_1' => 'Billing Address 1',
             'billing_address_2' => 'Billing Address 2',
+            'billing_postcode' => 'Billing Postcode',
             'billing_city' => 'Billing City',
             'billing_state' => 'Billing State',
-            'billing_postcode' => 'Billing Postcode',
+            'billing_state_code' => 'Billing State Code',
             'billing_country' => 'Billing Country',
             'shipping_first_name' => 'Shipping First Name',
             'shipping_last_name' => 'Shipping Last Name',
+            'shipping_full_name' => 'Shipping Full Name',
             'shipping_address_1' => 'Shipping Address 1',
             'shipping_address_2' => 'Shipping Address 2',
+            'shipping_postcode' => 'Shipping Postcode',
             'shipping_city' => 'Shipping City',
             'shipping_state' => 'Shipping State',
-            'shipping_postcode' => 'Shipping Postcode',
+            'shipping_state_code' => 'Shipping State Code',
             'shipping_country' => 'Shipping Country',
-            'payment_method' => 'Payment Method',
-            'payment_method_title' => 'Payment Method Title',
-            'order_total' => 'Order Total',
-            'order_subtotal' => 'Order Subtotal',
-            'order_tax' => 'Order Tax',
-            'order_shipping' => 'Order Shipping',
-            'order_discount' => 'Order Discount',
-            'order_currency' => 'Order Currency',
+            'shipping_company' => 'Shipping Company',
             'customer_note' => 'Customer Note',
+            'item_id' => 'Item ID',
+            'item_product_id' => 'Item Product ID',
+            'item_name' => 'Item Name',
+            'item_sku' => 'Item SKU',
+            'item_quantity' => 'Item Quantity',
+            'item_subtotal' => 'Item Subtotal',
+            'item_subtotal_tax' => 'Item Subtotal Tax',
+            'item_total' => 'Item Total',
+            'item_total_tax' => 'Item Total Tax',
+            'item_refunded' => 'Item Refunded',
+            'item_refunded_qty' => 'Item Refunded Quantity',
+            'item_meta' => 'Item Meta',
+            'item_price' => 'Item Price',
+            'line_items' => 'Line Items',
+            'shipping_items' => 'Shipping Items',
+            'fee_items' => 'Fee Items',
+            'tax_items' => 'Tax Items',
+            'coupon_items' => 'Coupon Items',
+            'refunds' => 'Refunds',
+            'order_notes' => 'Order Notes',
+            'download_permissions' => 'Download Permissions',
             'order_meta' => 'Order Meta'
         ],
         'order_items' => [
@@ -479,7 +512,7 @@ class Settings {
     /**
      * Sanitize field mappings
      */
-    private function sanitize_field_mappings($field_mappings, $export_type) {
+    public function sanitize_field_mappings($field_mappings, $export_type) {
         $sanitized = array();
         
         // If no field mappings provided, use defaults
@@ -488,15 +521,25 @@ class Settings {
         }
         
         // Handle the new table-based field mapping structure from the form
-        foreach ($field_mappings as $field_index => $field_data) {
-            if (isset($field_data['enabled']) && $field_data['enabled']) {
-                $column_name = isset($field_data['column_name']) ? $field_data['column_name'] : '';
-                $data_source = isset($field_data['data_source']) ? $field_data['data_source'] : '';
+        if (is_array($field_mappings)) {
+            foreach ($field_mappings as $field_index => $field_data) {
+                // Check if the field is enabled (checkbox is checked)
+                $enabled = isset($field_data['enabled']) && $field_data['enabled'];
                 
-                if (!empty($column_name) && !empty($data_source)) {
-                    $sanitized[sanitize_key($data_source)] = sanitize_text_field($column_name);
+                if ($enabled) {
+                    $column_name = isset($field_data['column_name']) ? sanitize_text_field($field_data['column_name']) : '';
+                    $data_source = isset($field_data['data_source']) ? sanitize_text_field($field_data['data_source']) : '';
+                    
+                    if (!empty($column_name) && !empty($data_source)) {
+                        $sanitized[sanitize_key($data_source)] = $column_name;
+                    }
                 }
             }
+        }
+        
+        // If no valid field mappings found, return defaults
+        if (empty($sanitized)) {
+            return self::DEFAULT_FIELD_MAPPINGS[$export_type] ?? array();
         }
         
         return $sanitized;
