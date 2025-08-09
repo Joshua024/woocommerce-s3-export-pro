@@ -436,8 +436,9 @@ function get_data_source_options($export_type, $selected_value = '') {
                                                 <input type="checkbox" id="select-all-<?php echo $index; ?>" onchange="toggleAllFields(<?php echo $index; ?>, this.checked)">
                                             </th>
                                             <th style="width: 30px;">⋮⋮</th>
-                                            <th style="width: 40%;">Column Name</th>
-                                            <th style="width: 40%;">Data Source</th>
+                                            <th style="width: 35%;">Column Name</th>
+                                            <th style="width: 35%;">Data Source</th>
+                                            <th style="width: 60px;">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody class="wc-s3-field-mapping-tbody" id="field-mapping-tbody-<?php echo $index; ?>">
@@ -473,6 +474,11 @@ function get_data_source_options($export_type, $selected_value = '') {
                                                     <select name="export_types[<?php echo $index; ?>][field_mappings][<?php echo $field_index; ?>][data_source]" class="data-source-select">
                                                         <?php echo get_data_source_options($export_type['type'] ?? 'orders', $field_data['data_source'] ?? ''); ?>
                                                     </select>
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="wc-s3-btn error small" onclick="removeFieldRow(<?php echo $index; ?>, <?php echo $field_index; ?>)">
+                                                        🗑️
+                                                    </button>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
@@ -803,14 +809,15 @@ function addExportType() {
                                 <th style="width: 30px;">
                                     <input type="checkbox" id="select-all-${newIndex}" onchange="toggleAllFields(${newIndex}, this.checked)">
                                 </th>
-                                <th style="width: 30px;">⋮⋮</th>
-                                <th style="width: 40%;">Column Name</th>
-                                <th style="width: 40%;">Data Source</th>
-                            </tr>
-                        </thead>
-                        <tbody class="wc-s3-field-mapping-tbody" id="field-mapping-tbody-${newIndex}">
-                            <!-- Default fields will be loaded here -->
-                        </tbody>
+                                                        <th style="width: 30px;">⋮⋮</th>
+                        <th style="width: 35%;">Column Name</th>
+                        <th style="width: 35%;">Data Source</th>
+                        <th style="width: 60px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="wc-s3-field-mapping-tbody" id="field-mapping-tbody-${newIndex}">
+                    <!-- Default fields will be loaded here -->
+                </tbody>
                     </table>
                 </div>
                 
@@ -872,10 +879,42 @@ function addFieldRow(exportTypeIndex) {
                 ${getDataSourceOptionsHTML(exportType)}
             </select>
         </td>
+        <td>
+            <button type="button" class="wc-s3-btn error small" onclick="removeFieldRow(${exportTypeIndex}, ${newFieldIndex})">
+                🗑️
+            </button>
+        </td>
     `;
     
     tbody.appendChild(newRow);
     initializeDragAndDrop(exportTypeIndex);
+}
+
+function removeFieldRow(exportTypeIndex, fieldIndex) {
+    const tbody = document.getElementById(`field-mapping-tbody-${exportTypeIndex}`);
+    const row = tbody.querySelector(`tr[data-field-index="${fieldIndex}"]`);
+    
+    if (row && confirm('Are you sure you want to remove this field?')) {
+        row.remove();
+        
+        // Re-index remaining rows
+        const remainingRows = tbody.querySelectorAll('tr');
+        remainingRows.forEach((row, index) => {
+            row.dataset.fieldIndex = index;
+            const inputs = row.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                const name = input.name;
+                if (name) {
+                    input.name = name.replace(/\[\d+\]/, `[${index}]`);
+                }
+            });
+            // Update the onclick attribute for the remove button
+            const removeButton = row.querySelector('button[onclick*="removeFieldRow"]');
+            if (removeButton) {
+                removeButton.setAttribute('onclick', `removeFieldRow(${exportTypeIndex}, ${index})`);
+            }
+        });
+    }
 }
 
 function removeSelectedFields(exportTypeIndex) {
@@ -903,6 +942,11 @@ function removeSelectedFields(exportTypeIndex) {
                     input.name = name.replace(/\[\d+\]/, `[${index}]`);
                 }
             });
+            // Update the onclick attribute for the remove button
+            const removeButton = row.querySelector('button[onclick*="removeFieldRow"]');
+            if (removeButton) {
+                removeButton.setAttribute('onclick', `removeFieldRow(${exportTypeIndex}, ${index})`);
+            }
         });
     }
 }
@@ -932,6 +976,11 @@ function loadDefaultFields(exportTypeIndex, exportType) {
                     <select name="export_types[${exportTypeIndex}][field_mappings][${index}][data_source]" class="data-source-select">
                         ${getDataSourceOptionsHTML(exportType, field.key)}
                     </select>
+                </td>
+                <td>
+                    <button type="button" class="wc-s3-btn error small" onclick="removeFieldRow(${exportTypeIndex}, ${index})">
+                        🗑️
+                    </button>
                 </td>
             `;
             
