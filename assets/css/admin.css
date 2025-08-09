@@ -925,11 +925,19 @@
     background: #ffffff;
 }
 
+.wc-s3-modal-body .wc-s3-form-group {
+    margin-bottom: 2rem;
+}
+
+.wc-s3-modal-body .wc-s3-form-group:last-child {
+    margin-bottom: 0;
+}
+
 .wc-s3-modal-actions {
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
-    margin-top: 2rem;
+    margin-top: 2.5rem;
     padding-top: 1.5rem;
     border-top: 1px solid #e5e7eb;
 }
@@ -939,14 +947,17 @@
     display: flex;
     align-items: center;
     cursor: pointer;
-    padding: 0.75rem;
+    padding: 1rem;
     border-radius: 8px;
     transition: background-color 0.2s ease;
     margin: 0;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
 }
 
 .wc-s3-checkbox-label:hover {
     background: #f3f4f6;
+    border-color: #d1d5db;
 }
 
 .wc-s3-checkbox-label input[type="checkbox"] {
@@ -1111,17 +1122,18 @@
 .wc-s3-checkbox-group {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.75rem;
-    margin-top: 0.5rem;
+    gap: 1rem;
+    margin-top: 0.75rem;
 }
 
 .wc-s3-checkbox {
     display: flex;
     align-items: center;
     cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 6px;
+    padding: 0.75rem;
+    border-radius: 8px;
     transition: background-color 0.2s ease;
+    margin-bottom: 0.5rem;
 }
 
 .wc-s3-checkbox:hover {
@@ -1129,24 +1141,26 @@
 }
 
 .wc-s3-checkbox input[type="checkbox"] {
-    margin-right: 0.5rem;
-    width: 16px;
-    height: 16px;
+    margin-right: 0.75rem;
+    width: 18px;
+    height: 18px;
 }
 
 .wc-s3-checkbox .checkmark {
     position: relative;
     display: inline-block;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     background: #e5e7eb;
-    border-radius: 3px;
-    margin-right: 0.5rem;
+    border-radius: 4px;
+    margin-right: 0.75rem;
     transition: all 0.2s ease;
+    border: 2px solid #d1d5db;
 }
 
 .wc-s3-checkbox input[type="checkbox"]:checked + .checkmark {
     background: #667eea;
+    border-color: #667eea;
 }
 
 .wc-s3-checkbox input[type="checkbox"]:checked + .checkmark::after {
@@ -1156,7 +1170,7 @@
     left: 50%;
     transform: translate(-50%, -50%);
     color: white;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: bold;
 }
 
