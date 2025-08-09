@@ -92,7 +92,60 @@ function get_data_source_options($export_type, $selected_value = '') {
                 'line_subtotal' => 'Line Subtotal',
                 'line_tax' => 'Line Tax',
                 'line_subtotal_tax' => 'Line Subtotal Tax',
-                'product_meta' => 'Product Meta'
+                'product_meta' => 'Product Meta',
+                'order_date' => 'Order Date',
+                'order_status' => 'Order Status',
+                'order_number' => 'Order Number',
+                'order_number_formatted' => 'Order Number (Formatted)',
+                'customer_id' => 'Customer ID',
+                'billing_first_name' => 'Billing First Name',
+                'billing_last_name' => 'Billing Last Name',
+                'billing_email' => 'Billing Email',
+                'billing_phone' => 'Billing Phone',
+                'billing_address_1' => 'Billing Address 1',
+                'billing_address_2' => 'Billing Address 2',
+                'billing_city' => 'Billing City',
+                'billing_state' => 'Billing State',
+                'billing_postcode' => 'Billing Postcode',
+                'billing_country' => 'Billing Country',
+                'shipping_first_name' => 'Shipping First Name',
+                'shipping_last_name' => 'Shipping Last Name',
+                'shipping_address_1' => 'Shipping Address 1',
+                'shipping_address_2' => 'Shipping Address 2',
+                'shipping_city' => 'Shipping City',
+                'shipping_state' => 'Shipping State',
+                'shipping_postcode' => 'Shipping Postcode',
+                'shipping_country' => 'Shipping Country',
+                'payment_method' => 'Payment Method',
+                'payment_method_title' => 'Payment Method Title',
+                'order_total' => 'Order Total',
+                'order_subtotal' => 'Order Subtotal',
+                'order_tax' => 'Order Tax',
+                'order_shipping' => 'Order Shipping',
+                'order_discount' => 'Order Discount',
+                'order_currency' => 'Order Currency',
+                'customer_note' => 'Customer Note',
+                'shipping_total' => 'Shipping Total',
+                'shipping_tax_total' => 'Shipping Tax Total',
+                'fee_total' => 'Fee Total',
+                'tax_total' => 'Tax Total',
+                'discount_total' => 'Discount Total',
+                'refunded_total' => 'Refunded Total',
+                'shipping_method' => 'Shipping Method',
+                'order_meta' => 'Order Meta',
+                'product_type' => 'Product Type',
+                'product_status' => 'Product Status',
+                'product_price' => 'Product Price',
+                'product_regular_price' => 'Product Regular Price',
+                'product_sale_price' => 'Product Sale Price',
+                'product_description' => 'Product Description',
+                'product_short_description' => 'Product Short Description',
+                'product_categories' => 'Product Categories',
+                'product_tags' => 'Product Tags',
+                'product_stock_quantity' => 'Product Stock Quantity',
+                'product_stock_status' => 'Product Stock Status',
+                'product_weight' => 'Product Weight',
+                'product_dimensions' => 'Product Dimensions'
             );
             break;
             
@@ -404,16 +457,16 @@ function get_data_source_options($export_type, $selected_value = '') {
                                 <input type="time" id="export_type_<?php echo $index; ?>_time" 
                                        name="export_types[<?php echo $index; ?>][time]" 
                                        value="<?php echo esc_attr($export_type['time'] ?? '01:00'); ?>">
-                            </div>
-                            
-                            <div class="wc-s3-form-group">
-                                <label style="display: flex; align-items: center; margin: 0;">
+            </div>
+            
+            <div class="wc-s3-form-group">
+                    <label style="display: flex; align-items: center; margin: 0;">
                                     <input type="checkbox" name="export_types[<?php echo $index; ?>][enabled]" value="1" 
                                            <?php checked($export_type['enabled'] ?? true); ?> 
-                                           style="margin-right: 0.5rem;">
+                               style="margin-right: 0.5rem;">
                                     Enable this export
-                                </label>
-                            </div>
+                    </label>
+                </div>
                         </div>
                         
                         <div class="wc-s3-form-group">
