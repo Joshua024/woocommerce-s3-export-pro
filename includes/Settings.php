@@ -293,30 +293,17 @@ class Settings {
         if (empty($config)) {
             $config = array(
                 array(
-                    'id' => 'websales',
-                    'name' => 'Export Type',
+                    'id' => 'orders',
+                    'name' => 'Orders',
                     'type' => 'orders',
                     'enabled' => true,
                     'frequency' => 'daily',
                     'time' => '01:00',
-                    's3_folder' => 'web-sales',
-                    'local_uploads_folder' => 'web-sales',
-                    'file_prefix' => 'FundsOnlineWebsiteSales',
-                    'description' => 'Export order data (Web Sales)',
+                    's3_folder' => 'orders',
+                    'local_uploads_folder' => 'orders',
+                    'file_prefix' => 'FundsOnlineOrders',
+                    'description' => 'Export order data including order items, customer info, and all related data',
                     'field_mappings' => self::DEFAULT_FIELD_MAPPINGS['orders']
-                ),
-                array(
-                    'id' => 'websalelines',
-                    'name' => 'Export Type',
-                    'type' => 'order_items',
-                    'enabled' => true,
-                    'frequency' => 'daily',
-                    'time' => '02:00',
-                    's3_folder' => 'web-sale-lines',
-                    'local_uploads_folder' => 'web-sale-lines',
-                    'file_prefix' => 'FundsOnlineWebsiteSaleLineItems',
-                    'description' => 'Export order line items (Web Sale Lines)',
-                    'field_mappings' => self::DEFAULT_FIELD_MAPPINGS['order_items']
                 )
             );
         }

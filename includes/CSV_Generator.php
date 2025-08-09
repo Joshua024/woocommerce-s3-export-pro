@@ -64,8 +64,6 @@ class CSV_Generator {
         switch ($export_type) {
             case 'orders':
                 return $this->extract_orders_data($date_param);
-            case 'order_items':
-                return $this->extract_order_items_data($date_param);
             case 'customers':
                 return $this->extract_customers_data($date_param);
             case 'products':
@@ -95,6 +93,7 @@ class CSV_Generator {
         $data = array();
         
         foreach ($orders as $order) {
+            // Get order-level data
             $order_data = array(
                 'order_id' => $order->get_id(),
                 'order_number' => $order->get_order_number(),
@@ -139,19 +138,6 @@ class CSV_Generator {
                 'shipping_country' => $order->get_shipping_country(),
                 'shipping_company' => $order->get_shipping_company(),
                 'customer_note' => $order->get_customer_note(),
-                'item_id' => '',
-                'item_product_id' => '',
-                'item_name' => '',
-                'item_sku' => '',
-                'item_quantity' => '',
-                'item_subtotal' => '',
-                'item_subtotal_tax' => '',
-                'item_total' => '',
-                'item_total_tax' => '',
-                'item_refunded' => '',
-                'item_refunded_qty' => '',
-                'item_meta' => '',
-                'item_price' => '',
                 'line_items' => $this->get_line_items($order),
                 'shipping_items' => $this->get_shipping_items($order),
                 'fee_items' => $this->get_fee_items($order),
@@ -163,104 +149,47 @@ class CSV_Generator {
                 'order_meta' => $this->get_order_meta($order)
             );
             
-            $data[] = $order_data;
-        }
-        
-        return $data;
-    }
-    
-    /**
-     * Extract order items data
-     */
-    private function extract_order_items_data($date_param = null) {
-        $args = array(
-            'limit' => -1,
-            'status' => array('wc-completed', 'wc-processing', 'wc-on-hold'),
-            'return' => 'objects'
-        );
-        
-        if ($date_param) {
-            $args['date_created'] = $date_param;
-        }
-        
-        $orders = wc_get_orders($args);
-        $data = array();
-        
-        foreach ($orders as $order) {
-            foreach ($order->get_items() as $item_id => $item) {
-                // Use proper WooCommerce methods with error handling
-                $product_id = 0;
-                $variation_id = 0;
-                
-                try {
-                    if (is_callable(array($item, 'get_product_id'))) {
+            // Check if we have items in this order
+            $items = $order->get_items();
+            
+            if (!empty($items)) {
+                // Create a row for each item, including order-level data
+                foreach ($items as $item_id => $item) {
+                    $item_data = $order_data; // Start with order-level data
+                    
+                    // Add item-level data
+                    $product_id = 0;
+                    $variation_id = 0;
+                    
+                    if (method_exists($item, 'get_product_id')) {
                         $product_id = $item->get_product_id();
                     }
-                } catch (\Exception $e) {
-                    $product_id = 0;
-                }
-                
-                try {
-                    if (is_callable(array($item, 'get_variation_id'))) {
+                    
+                    if (method_exists($item, 'get_variation_id')) {
                         $variation_id = $item->get_variation_id();
                     }
-                } catch (\Exception $e) {
-                    $variation_id = 0;
+                    
+                    $product = $product_id ? wc_get_product($product_id) : null;
+                    
+                    $item_data['item_id'] = $item_id;
+                    $item_data['item_product_id'] = $product_id;
+                    $item_data['item_name'] = $item->get_name();
+                    $item_data['item_sku'] = $product ? $product->get_sku() : '';
+                    $item_data['item_quantity'] = $item->get_quantity();
+                    $item_data['item_subtotal'] = method_exists($item, 'get_subtotal') ? $item->get_subtotal() : 0;
+                    $item_data['item_subtotal_tax'] = method_exists($item, 'get_subtotal_tax') ? $item->get_subtotal_tax() : 0;
+                    $item_data['item_total'] = method_exists($item, 'get_total') ? $item->get_total() : 0;
+                    $item_data['item_total_tax'] = method_exists($item, 'get_total_tax') ? $item->get_total_tax() : 0;
+                    $item_data['item_refunded'] = method_exists($item, 'get_total_refunded') ? $item->get_total_refunded() : 0;
+                    $item_data['item_refunded_qty'] = method_exists($item, 'get_qty_refunded') ? $item->get_qty_refunded() : 0;
+                    $item_data['item_meta'] = $this->get_item_meta($item);
+                    $item_data['item_price'] = method_exists($item, 'get_price') ? $item->get_price() : 0;
+                    
+                    $data[] = $item_data;
                 }
-                
-                $product = $product_id ? \wc_get_product($product_id) : null;
-                
-                $item_data = array(
-                    'order_id' => $order->get_id(),
-                    'order_item_id' => $item_id,
-                    'product_id' => $product_id,
-                    'product_name' => $item->get_name(),
-                    'product_sku' => $product ? $product->get_sku() : '',
-                    'product_variation_id' => $variation_id,
-                    'product_variation_sku' => $variation_id ? \wc_get_product($variation_id)->get_sku() : '',
-                    'product_variation_attributes' => $this->get_variation_attributes($item),
-                    'quantity' => $item->get_quantity(),
-                    'line_total' => 0,
-                    'line_subtotal' => 0,
-                    'line_tax' => 0,
-                    'line_subtotal_tax' => 0,
-                    'product_meta' => $this->get_item_meta($item)
-                );
-                
-                // Try to get totals with error handling
-                try {
-                    if (is_callable(array($item, 'get_total'))) {
-                        $item_data['line_total'] = $item->get_total();
-                    }
-                } catch (\Exception $e) {
-                    $item_data['line_total'] = 0;
-                }
-                
-                try {
-                    if (is_callable(array($item, 'get_subtotal'))) {
-                        $item_data['line_subtotal'] = $item->get_subtotal();
-                    }
-                } catch (\Exception $e) {
-                    $item_data['line_subtotal'] = 0;
-                }
-                
-                try {
-                    if (is_callable(array($item, 'get_total_tax'))) {
-                        $item_data['line_tax'] = $item->get_total_tax();
-                    }
-                } catch (\Exception $e) {
-                    $item_data['line_tax'] = 0;
-                }
-                
-                try {
-                    if (is_callable(array($item, 'get_subtotal_tax'))) {
-                        $item_data['line_subtotal_tax'] = $item->get_subtotal_tax();
-                    }
-                } catch (\Exception $e) {
-                    $item_data['line_subtotal_tax'] = 0;
-                }
-                
-                $data[] = $item_data;
+            } else {
+                // No items, just add order-level data
+                $data[] = $order_data;
             }
         }
         

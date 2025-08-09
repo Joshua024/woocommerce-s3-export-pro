@@ -611,11 +611,10 @@ function get_data_source_options($export_type, $selected_value = '') {
                                 <label for="export_type_<?php echo $index; ?>_type">Export Type</label>
                                 <select id="export_type_<?php echo $index; ?>_type" 
                                         name="export_types[<?php echo $index; ?>][type]">
-                                    <option value="orders" <?php selected($export_type['type'] ?? 'orders', 'orders'); ?>>Orders (Web Sales)</option>
-                                    <option value="order_items" <?php selected($export_type['type'] ?? 'orders', 'order_items'); ?>>Order Items (Web Sale Lines)</option>
-                                    <option value="customers" <?php selected($export_type['type'] ?? 'orders', 'customers'); ?>>Customers</option>
-                                    <option value="products" <?php selected($export_type['type'] ?? 'orders', 'products'); ?>>Products</option>
-                                    <option value="coupons" <?php selected($export_type['type'] ?? 'orders', 'coupons'); ?>>Coupons</option>
+                                    <option value="orders">Orders</option>
+                                    <option value="customers">Customers</option>
+                                    <option value="products">Products</option>
+                                    <option value="coupons">Coupons</option>
                                 </select>
                                 <p class="description">The type of data to export</p>
                             </div>
@@ -1177,8 +1176,7 @@ function addExportType() {
                     <label for="export_type_${newIndex}_type">Export Type</label>
                     <select id="export_type_${newIndex}_type" 
                             name="export_types[${newIndex}][type]">
-                        <option value="orders">Orders (Web Sales)</option>
-                        <option value="order_items">Order Items (Web Sale Lines)</option>
+                        <option value="orders">Orders</option>
                         <option value="customers">Customers</option>
                         <option value="products">Products</option>
                         <option value="coupons">Coupons</option>
