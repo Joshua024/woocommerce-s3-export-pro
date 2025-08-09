@@ -116,6 +116,36 @@
     background: #ef4444;
 }
 
+/* Status Issues */
+.wc-s3-status-card .status-issues {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+}
+
+.wc-s3-status-card .status-issues strong {
+    color: #991b1b;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.wc-s3-status-card .status-issues ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.wc-s3-status-card .status-issues li {
+    color: #7f1d1d;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.wc-s3-status-card .status-issues li:last-child {
+    margin-bottom: 0;
+}
+
 /* Action Buttons */
 .wc-s3-actions {
     display: grid;

@@ -250,6 +250,16 @@ function get_data_source_options($export_type, $selected_value = '') {
             <p><strong>WooCommerce:</strong> <?php echo $system_status['woocommerce'] ? '✅ Active' : '❌ Inactive'; ?></p>
             <p><strong>CSV Export Plugin:</strong> <?php echo $system_status['csv_export'] ? '✅ Active' : '❌ Inactive'; ?></p>
             <p><strong>Action Scheduler:</strong> <?php echo $system_status['action_scheduler'] ? '✅ Working' : '❌ Issues'; ?></p>
+            <?php if (!empty($system_status['issues'])): ?>
+                <div class="status-issues">
+                    <strong>Issues Found:</strong>
+                    <ul>
+                        <?php foreach ($system_status['issues'] as $issue): ?>
+                            <li>⚠️ <?php echo esc_html($issue); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- S3 Connection -->
@@ -261,8 +271,9 @@ function get_data_source_options($export_type, $selected_value = '') {
             <?php if ($s3_status['success']): ?>
                 <p><strong>Status:</strong> ✅ Connected</p>
                 <p><strong>Buckets:</strong> <?php echo $s3_status['buckets']; ?> available</p>
+                <p><strong>Region:</strong> <?php echo esc_html($current_s3_config['region'] ?? 'us-east-1'); ?></p>
             <?php else: ?>
-                <p><strong>Status:</strong> ⚠️ <?php echo $s3_status['message']; ?></p>
+                <p><strong>Status:</strong> ⚠️ <?php echo esc_html($s3_status['message'] ?? 'Not configured'); ?></p>
                 <p><strong>Action:</strong> Configure S3 credentials below</p>
             <?php endif; ?>
         </div>
@@ -276,6 +287,10 @@ function get_data_source_options($export_type, $selected_value = '') {
             <p><strong>Last Export:</strong> <?php echo $export_status['last_export'] ?: 'Never'; ?></p>
             <p><strong>Next Export:</strong> <?php echo $export_status['next_export'] ?: 'Not Scheduled'; ?></p>
             <p><strong>Total Exports:</strong> <?php echo $export_status['total_exports']; ?></p>
+            <p><strong>Pending Jobs:</strong> <?php echo $export_status['pending_jobs']; ?></p>
+            <?php if ($export_status['status'] !== 'active'): ?>
+                <p><strong>Action:</strong> <a href="#" onclick="setupAutomation(); return false;">Setup Automation</a></p>
+            <?php endif; ?>
         </div>
     </div>
 
