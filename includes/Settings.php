@@ -294,7 +294,7 @@ class Settings {
             $config = array(
                 array(
                     'id' => 'websales',
-                    'name' => 'Orders Export',
+                    'name' => 'Export Type',
                     'type' => 'orders',
                     'enabled' => true,
                     'frequency' => 'daily',
@@ -307,7 +307,7 @@ class Settings {
                 ),
                 array(
                     'id' => 'websalelines',
-                    'name' => 'Order Items Export',
+                    'name' => 'Export Type',
                     'type' => 'order_items',
                     'enabled' => true,
                     'frequency' => 'daily',
