@@ -429,6 +429,31 @@ function get_data_source_options($export_type, $selected_value = '') {
         </div>
     </div>
 
+    <!-- Logs Modal -->
+    <div id="logs-modal" class="wc-s3-modal" style="display: none;">
+        <div class="wc-s3-modal-content wc-s3-modal-large">
+            <div class="wc-s3-modal-header">
+                <h3>📋 System Logs</h3>
+                <button type="button" class="wc-s3-modal-close-btn" onclick="closeLogsModal()" aria-label="Close modal">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="wc-s3-modal-body">
+                <div class="wc-s3-logs-container">
+                    <div class="wc-s3-logs-header">
+                        <h4>Recent System Logs</h4>
+                        <button type="button" class="wc-s3-btn secondary small" onclick="loadLogs()">🔄 Refresh</button>
+                    </div>
+                    <div id="logs-content" class="wc-s3-logs-content">
+                        <!-- Logs will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- S3 Configuration -->
     <div class="wc-s3-form">
         <h3>☁️ S3 Configuration</h3>
@@ -844,7 +869,52 @@ function setupAutomation() {
 
 // View Logs
 function viewLogs() {
-    window.open('<?php echo admin_url('admin.php?page=wc-s3-export-pro&tab=logs'); ?>', '_blank');
+    document.getElementById('logs-modal').style.display = 'block';
+    loadLogs();
+}
+
+function closeLogsModal() {
+    document.getElementById('logs-modal').style.display = 'none';
+}
+
+function loadLogs() {
+    const logsContainer = document.getElementById('logs-content');
+    logsContainer.innerHTML = '<div class="wc-s3-loading">Loading logs...</div>';
+
+    fetch(wcS3ExportPro.ajaxUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'action=wc_s3_get_log_content&nonce=' + wcS3ExportPro.nonce
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.data && data.data.content) {
+            const logs = data.data.content;
+            if (logs && logs.trim() !== '') {
+                // Format logs for display
+                const formattedLogs = logs.split('\n').map(line => {
+                    if (line.trim() === '') return '';
+                    return '<div class="log-entry">' + esc_html(line) + '</div>';
+                }).join('');
+                logsContainer.innerHTML = formattedLogs;
+            } else {
+                logsContainer.innerHTML = '<div class="wc-s3-no-data">No log entries found.</div>';
+            }
+        } else {
+            logsContainer.innerHTML = '<div class="wc-s3-error">Error loading logs: ' + (data.data ? data.data : 'Unknown error') + '</div>';
+        }
+    })
+    .catch(error => {
+        logsContainer.innerHTML = '<div class="wc-s3-error">Error loading logs: ' + error.message + '</div>';
+    });
+}
+
+function esc_html(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Export History
