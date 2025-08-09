@@ -23,6 +23,160 @@ $export_status = $monitoring->get_export_status();
 // Get current settings
 $current_settings = $settings->get_settings();
 $current_s3_config = $settings->get_s3_config();
+
+/**
+ * Get data source options for field mapping
+ */
+function get_data_source_options($export_type, $selected_value = '') {
+    $options = array();
+    
+    switch ($export_type) {
+        case 'orders':
+            $options = array(
+                'order_id' => 'Order ID',
+                'order_number' => 'Order Number',
+                'order_number_formatted' => 'Order Number (Formatted)',
+                'order_date' => 'Order Date',
+                'order_status' => 'Order Status',
+                'customer_id' => 'Customer ID',
+                'billing_first_name' => 'Billing First Name',
+                'billing_last_name' => 'Billing Last Name',
+                'billing_email' => 'Billing Email',
+                'billing_phone' => 'Billing Phone',
+                'billing_address_1' => 'Billing Address 1',
+                'billing_address_2' => 'Billing Address 2',
+                'billing_city' => 'Billing City',
+                'billing_state' => 'Billing State',
+                'billing_postcode' => 'Billing Postcode',
+                'billing_country' => 'Billing Country',
+                'shipping_first_name' => 'Shipping First Name',
+                'shipping_last_name' => 'Shipping Last Name',
+                'shipping_address_1' => 'Shipping Address 1',
+                'shipping_address_2' => 'Shipping Address 2',
+                'shipping_city' => 'Shipping City',
+                'shipping_state' => 'Shipping State',
+                'shipping_postcode' => 'Shipping Postcode',
+                'shipping_country' => 'Shipping Country',
+                'payment_method' => 'Payment Method',
+                'payment_method_title' => 'Payment Method Title',
+                'order_total' => 'Order Total',
+                'order_subtotal' => 'Order Subtotal',
+                'order_tax' => 'Order Tax',
+                'order_shipping' => 'Order Shipping',
+                'order_discount' => 'Order Discount',
+                'order_currency' => 'Order Currency',
+                'customer_note' => 'Customer Note',
+                'shipping_total' => 'Shipping Total',
+                'shipping_tax_total' => 'Shipping Tax Total',
+                'fee_total' => 'Fee Total',
+                'tax_total' => 'Tax Total',
+                'discount_total' => 'Discount Total',
+                'refunded_total' => 'Refunded Total',
+                'shipping_method' => 'Shipping Method',
+                'order_meta' => 'Order Meta'
+            );
+            break;
+            
+        case 'order_items':
+            $options = array(
+                'order_id' => 'Order ID',
+                'order_item_id' => 'Order Item ID',
+                'product_id' => 'Product ID',
+                'product_name' => 'Product Name',
+                'product_sku' => 'Product SKU',
+                'product_variation_id' => 'Product Variation ID',
+                'product_variation_sku' => 'Product Variation SKU',
+                'product_variation_attributes' => 'Product Variation Attributes',
+                'quantity' => 'Quantity',
+                'line_total' => 'Line Total',
+                'line_subtotal' => 'Line Subtotal',
+                'line_tax' => 'Line Tax',
+                'line_subtotal_tax' => 'Line Subtotal Tax',
+                'product_meta' => 'Product Meta'
+            );
+            break;
+            
+        case 'customers':
+            $options = array(
+                'customer_id' => 'Customer ID',
+                'user_id' => 'User ID',
+                'username' => 'Username',
+                'email' => 'Email',
+                'first_name' => 'First Name',
+                'last_name' => 'Last Name',
+                'display_name' => 'Display Name',
+                'role' => 'Role',
+                'date_registered' => 'Date Registered',
+                'total_spent' => 'Total Spent',
+                'order_count' => 'Order Count',
+                'last_order_date' => 'Last Order Date',
+                'billing_first_name' => 'Billing First Name',
+                'billing_last_name' => 'Billing Last Name',
+                'billing_email' => 'Billing Email',
+                'billing_phone' => 'Billing Phone',
+                'billing_address_1' => 'Billing Address 1',
+                'billing_address_2' => 'Billing Address 2',
+                'billing_city' => 'Billing City',
+                'billing_state' => 'Billing State',
+                'billing_postcode' => 'Billing Postcode',
+                'billing_country' => 'Billing Country',
+                'customer_meta' => 'Customer Meta'
+            );
+            break;
+            
+        case 'products':
+            $options = array(
+                'product_id' => 'Product ID',
+                'product_name' => 'Product Name',
+                'product_sku' => 'Product SKU',
+                'product_type' => 'Product Type',
+                'product_status' => 'Product Status',
+                'product_price' => 'Product Price',
+                'product_regular_price' => 'Product Regular Price',
+                'product_sale_price' => 'Product Sale Price',
+                'product_description' => 'Product Description',
+                'product_short_description' => 'Product Short Description',
+                'product_categories' => 'Product Categories',
+                'product_tags' => 'Product Tags',
+                'product_stock_quantity' => 'Product Stock Quantity',
+                'product_stock_status' => 'Product Stock Status',
+                'product_weight' => 'Product Weight',
+                'product_dimensions' => 'Product Dimensions',
+                'product_meta' => 'Product Meta'
+            );
+            break;
+            
+        case 'coupons':
+            $options = array(
+                'coupon_id' => 'Coupon ID',
+                'coupon_code' => 'Coupon Code',
+                'coupon_type' => 'Coupon Type',
+                'coupon_amount' => 'Coupon Amount',
+                'coupon_description' => 'Coupon Description',
+                'coupon_date_expires' => 'Coupon Date Expires',
+                'coupon_usage_count' => 'Coupon Usage Count',
+                'coupon_individual_use' => 'Coupon Individual Use',
+                'coupon_product_ids' => 'Coupon Product IDs',
+                'coupon_excluded_product_ids' => 'Coupon Excluded Product IDs',
+                'coupon_product_categories' => 'Coupon Product Categories',
+                'coupon_excluded_product_categories' => 'Coupon Excluded Product Categories',
+                'coupon_usage_limit' => 'Coupon Usage Limit',
+                'coupon_usage_limit_per_user' => 'Coupon Usage Limit Per User',
+                'coupon_limit_usage_to_x_items' => 'Coupon Limit Usage To X Items',
+                'coupon_free_shipping' => 'Coupon Free Shipping',
+                'coupon_meta' => 'Coupon Meta'
+            );
+            break;
+    }
+    
+    $html = '';
+    foreach ($options as $value => $label) {
+        $selected = ($value === $selected_value) ? 'selected' : '';
+        $html .= '<option value="' . esc_attr($value) . '" ' . $selected . '>' . esc_html($label) . '</option>';
+    }
+    
+    return $html;
+}
 ?>
 
 <div class="wrap wc-s3-export-pro-wrap">
@@ -267,6 +421,70 @@ $current_s3_config = $settings->get_s3_config();
                             <textarea id="export_type_<?php echo $index; ?>_description" 
                                       name="export_types[<?php echo $index; ?>][description]" 
                                       rows="2" placeholder="Optional description of what this export contains"><?php echo esc_textarea($export_type['description'] ?? ''); ?></textarea>
+                        </div>
+                        
+                        <!-- Field Mapping Configuration -->
+                        <div class="wc-s3-field-mapping-section">
+                            <h4>📋 Field Mapping Configuration</h4>
+                            <p class="description">Configure which fields to include in this export. Drag to reorder, add custom fields, or remove unwanted columns.</p>
+                            
+                            <div class="wc-s3-field-mapping-table-container">
+                                <table class="wc-s3-field-mapping-table" id="field-mapping-table-<?php echo $index; ?>">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 30px;">
+                                                <input type="checkbox" id="select-all-<?php echo $index; ?>" onchange="toggleAllFields(<?php echo $index; ?>, this.checked)">
+                                            </th>
+                                            <th style="width: 30px;">⋮⋮</th>
+                                            <th style="width: 40%;">Column Name</th>
+                                            <th style="width: 40%;">Data Source</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="wc-s3-field-mapping-tbody" id="field-mapping-tbody-<?php echo $index; ?>">
+                                        <?php
+                                        $current_field_mappings = $export_type['field_mappings'] ?? array();
+                                        if (empty($current_field_mappings)) {
+                                            // Load default fields for this export type
+                                            $default_fields = $settings->get_available_fields($export_type['type'] ?? 'orders');
+                                            $current_field_mappings = array();
+                                            foreach ($default_fields as $field_key => $field_label) {
+                                                $current_field_mappings[] = array(
+                                                    'enabled' => true,
+                                                    'column_name' => $field_label,
+                                                    'data_source' => $field_key
+                                                );
+                                            }
+                                        }
+                                        
+                                        foreach ($current_field_mappings as $field_index => $field_data):
+                                        ?>
+                                            <tr class="wc-s3-field-row" data-field-index="<?php echo $field_index; ?>">
+                                                <td>
+                                                    <input type="checkbox" name="export_types[<?php echo $index; ?>][field_mappings][<?php echo $field_index; ?>][enabled]" 
+                                                           value="1" <?php checked($field_data['enabled'] ?? true); ?>>
+                                                </td>
+                                                <td class="drag-handle">⋮⋮</td>
+                                                <td>
+                                                    <input type="text" name="export_types[<?php echo $index; ?>][field_mappings][<?php echo $field_index; ?>][column_name]" 
+                                                           value="<?php echo esc_attr($field_data['column_name'] ?? ''); ?>" 
+                                                           placeholder="e.g., Order ID" class="regular-text">
+                                                </td>
+                                                <td>
+                                                    <select name="export_types[<?php echo $index; ?>][field_mappings][<?php echo $field_index; ?>][data_source]" class="data-source-select">
+                                                        <?php echo get_data_source_options($export_type['type'] ?? 'orders', $field_data['data_source'] ?? ''); ?>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="wc-s3-field-mapping-actions">
+                                <button type="button" class="wc-s3-btn secondary" onclick="addFieldRow(<?php echo $index; ?>)">➕ Add Column</button>
+                                <button type="button" class="wc-s3-btn secondary" onclick="removeSelectedFields(<?php echo $index; ?>)">🗑️ Remove Selected</button>
+                                <button type="button" class="wc-s3-btn secondary" onclick="loadDefaultFields(<?php echo $index; ?>, '<?php echo $export_type['type'] ?? 'orders'; ?>')">📋 Load Default Fields</button>
+                            </div>
                         </div>
                         
                         <input type="hidden" name="export_types[<?php echo $index; ?>][id]" 
@@ -573,12 +791,46 @@ function addExportType() {
                           rows="2" placeholder="Optional description of what this export contains"></textarea>
             </div>
             
+            <!-- Field Mapping Configuration -->
+            <div class="wc-s3-field-mapping-section">
+                <h4>📋 Field Mapping Configuration</h4>
+                <p class="description">Configure which fields to include in this export. Drag to reorder, add custom fields, or remove unwanted columns.</p>
+                
+                <div class="wc-s3-field-mapping-table-container">
+                    <table class="wc-s3-field-mapping-table" id="field-mapping-table-${newIndex}">
+                        <thead>
+                            <tr>
+                                <th style="width: 30px;">
+                                    <input type="checkbox" id="select-all-${newIndex}" onchange="toggleAllFields(${newIndex}, this.checked)">
+                                </th>
+                                <th style="width: 30px;">⋮⋮</th>
+                                <th style="width: 40%;">Column Name</th>
+                                <th style="width: 40%;">Data Source</th>
+                            </tr>
+                        </thead>
+                        <tbody class="wc-s3-field-mapping-tbody" id="field-mapping-tbody-${newIndex}">
+                            <!-- Default fields will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="wc-s3-field-mapping-actions">
+                    <button type="button" class="wc-s3-btn secondary" onclick="addFieldRow(${newIndex})">➕ Add Column</button>
+                    <button type="button" class="wc-s3-btn secondary" onclick="removeSelectedFields(${newIndex})">🗑️ Remove Selected</button>
+                    <button type="button" class="wc-s3-btn secondary" onclick="loadDefaultFields(${newIndex}, 'orders')">📋 Load Default Fields</button>
+                </div>
+            </div>
+            
             <input type="hidden" name="export_types[${newIndex}][id]" 
                    value="">
         </div>
     `;
     
     container.insertAdjacentHTML('beforeend', newExportType);
+    
+    // Load default fields for the new export type
+    loadDefaultFields(newIndex, 'orders');
+    initializeDragAndDrop(newIndex);
 }
 
 // Remove Export Type
@@ -595,6 +847,268 @@ function removeExportType(index) {
     }
 }
 
+// Field Mapping Functions
+function addFieldRow(exportTypeIndex) {
+    const tbody = document.getElementById(`field-mapping-tbody-${exportTypeIndex}`);
+    const newFieldIndex = tbody.children.length;
+    const exportType = document.getElementById(`export_type_${exportTypeIndex}_type`).value;
+    
+    const newRow = document.createElement('tr');
+    newRow.className = 'wc-s3-field-row';
+    newRow.dataset.fieldIndex = newFieldIndex;
+    newRow.draggable = true;
+    
+    newRow.innerHTML = `
+        <td>
+            <input type="checkbox" name="export_types[${exportTypeIndex}][field_mappings][${newFieldIndex}][enabled]" value="1" checked>
+        </td>
+        <td class="drag-handle">⋮⋮</td>
+        <td>
+            <input type="text" name="export_types[${exportTypeIndex}][field_mappings][${newFieldIndex}][column_name]" 
+                   placeholder="e.g., Custom Field" class="regular-text">
+        </td>
+        <td>
+            <select name="export_types[${exportTypeIndex}][field_mappings][${newFieldIndex}][data_source]" class="data-source-select">
+                ${getDataSourceOptionsHTML(exportType)}
+            </select>
+        </td>
+    `;
+    
+    tbody.appendChild(newRow);
+    initializeDragAndDrop(exportTypeIndex);
+}
+
+function removeSelectedFields(exportTypeIndex) {
+    const tbody = document.getElementById(`field-mapping-tbody-${exportTypeIndex}`);
+    const selectedRows = tbody.querySelectorAll('input[type="checkbox"]:checked');
+    
+    if (selectedRows.length === 0) {
+        alert('Please select fields to remove.');
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to remove ${selectedRows.length} selected field(s)?`)) {
+        selectedRows.forEach(checkbox => {
+            checkbox.closest('tr').remove();
+        });
+        
+        // Re-index remaining rows
+        const remainingRows = tbody.querySelectorAll('tr');
+        remainingRows.forEach((row, index) => {
+            row.dataset.fieldIndex = index;
+            const inputs = row.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                const name = input.name;
+                if (name) {
+                    input.name = name.replace(/\[\d+\]/, `[${index}]`);
+                }
+            });
+        });
+    }
+}
+
+function loadDefaultFields(exportTypeIndex, exportType) {
+    if (confirm('This will replace all current field mappings with default fields. Continue?')) {
+        const tbody = document.getElementById(`field-mapping-tbody-${exportTypeIndex}`);
+        tbody.innerHTML = '';
+        
+        const defaultFields = getDefaultFields(exportType);
+        defaultFields.forEach((field, index) => {
+            const row = document.createElement('tr');
+            row.className = 'wc-s3-field-row';
+            row.dataset.fieldIndex = index;
+            row.draggable = true;
+            
+            row.innerHTML = `
+                <td>
+                    <input type="checkbox" name="export_types[${exportTypeIndex}][field_mappings][${index}][enabled]" value="1" checked>
+                </td>
+                <td class="drag-handle">⋮⋮</td>
+                <td>
+                    <input type="text" name="export_types[${exportTypeIndex}][field_mappings][${index}][column_name]" 
+                           value="${field.label}" class="regular-text">
+                </td>
+                <td>
+                    <select name="export_types[${exportTypeIndex}][field_mappings][${index}][data_source]" class="data-source-select">
+                        ${getDataSourceOptionsHTML(exportType, field.key)}
+                    </select>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+        });
+        
+        initializeDragAndDrop(exportTypeIndex);
+    }
+}
+
+function toggleAllFields(exportTypeIndex, checked) {
+    const tbody = document.getElementById(`field-mapping-tbody-${exportTypeIndex}`);
+    const checkboxes = tbody.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = checked;
+    });
+}
+
+function initializeDragAndDrop(exportTypeIndex) {
+    const tbody = document.getElementById(`field-mapping-tbody-${exportTypeIndex}`);
+    if (!tbody) return;
+    
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach((row, rowIndex) => {
+        row.draggable = true;
+        row.dataset.rowIndex = rowIndex;
+        
+        // Remove existing event listeners
+        row.removeEventListener('dragstart', handleDragStart);
+        row.removeEventListener('dragover', handleDragOver);
+        row.removeEventListener('drop', handleDrop);
+        row.removeEventListener('dragenter', handleDragEnter);
+        row.removeEventListener('dragleave', handleDragLeave);
+        
+        // Add new event listeners
+        row.addEventListener('dragstart', handleDragStart);
+        row.addEventListener('dragover', handleDragOver);
+        row.addEventListener('drop', handleDrop);
+        row.addEventListener('dragenter', handleDragEnter);
+        row.addEventListener('dragleave', handleDragLeave);
+    });
+}
+
+function handleDragStart(e) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', e.target.dataset.rowIndex);
+    e.target.classList.add('dragging');
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    const row = e.target.closest('tr');
+    if (row && !row.classList.contains('dragging')) {
+        row.classList.add('drag-over');
+    }
+}
+
+function handleDragLeave(e) {
+    const row = e.target.closest('tr');
+    if (row) {
+        row.classList.remove('drag-over');
+    }
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    const draggedRow = document.querySelector('.dragging');
+    const dropRow = e.target.closest('tr');
+    
+    if (draggedRow && dropRow && draggedRow !== dropRow) {
+        const tbody = draggedRow.parentNode;
+        const draggedIndex = parseInt(draggedRow.dataset.rowIndex);
+        const dropIndex = parseInt(dropRow.dataset.rowIndex);
+        
+        if (draggedIndex < dropIndex) {
+            tbody.insertBefore(draggedRow, dropRow.nextSibling);
+        } else {
+            tbody.insertBefore(draggedRow, dropRow);
+        }
+        
+        // Update row indices
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach((row, index) => {
+            row.dataset.rowIndex = index;
+        });
+    }
+    
+    // Clean up
+    document.querySelectorAll('.dragging, .drag-over').forEach(el => {
+        el.classList.remove('dragging', 'drag-over');
+    });
+}
+
+function getDataSourceOptionsHTML(exportType, selectedValue = '') {
+    const options = {
+        'orders': [
+            'order_id', 'order_number', 'order_number_formatted', 'order_date', 'order_status',
+            'customer_id', 'billing_first_name', 'billing_last_name', 'billing_email', 'billing_phone',
+            'billing_address_1', 'billing_address_2', 'billing_city', 'billing_state', 'billing_postcode', 'billing_country',
+            'shipping_first_name', 'shipping_last_name', 'shipping_address_1', 'shipping_address_2',
+            'shipping_city', 'shipping_state', 'shipping_postcode', 'shipping_country',
+            'payment_method', 'payment_method_title', 'order_total', 'order_subtotal', 'order_tax',
+            'order_shipping', 'order_discount', 'order_currency', 'customer_note', 'shipping_total',
+            'shipping_tax_total', 'fee_total', 'tax_total', 'discount_total', 'refunded_total',
+            'shipping_method', 'order_meta'
+        ],
+        'order_items': [
+            'order_id', 'order_item_id', 'product_id', 'product_name', 'product_sku',
+            'product_variation_id', 'product_variation_sku', 'product_variation_attributes',
+            'quantity', 'line_total', 'line_subtotal', 'line_tax', 'line_subtotal_tax', 'product_meta'
+        ],
+        'customers': [
+            'customer_id', 'user_id', 'username', 'email', 'first_name', 'last_name', 'display_name',
+            'role', 'date_registered', 'total_spent', 'order_count', 'last_order_date',
+            'billing_first_name', 'billing_last_name', 'billing_email', 'billing_phone',
+            'billing_address_1', 'billing_address_2', 'billing_city', 'billing_state',
+            'billing_postcode', 'billing_country', 'customer_meta'
+        ],
+        'products': [
+            'product_id', 'product_name', 'product_sku', 'product_type', 'product_status',
+            'product_price', 'product_regular_price', 'product_sale_price', 'product_description',
+            'product_short_description', 'product_categories', 'product_tags', 'product_stock_quantity',
+            'product_stock_status', 'product_weight', 'product_dimensions', 'product_meta'
+        ],
+        'coupons': [
+            'coupon_id', 'coupon_code', 'coupon_type', 'coupon_amount', 'coupon_description',
+            'coupon_date_expires', 'coupon_usage_count', 'coupon_individual_use', 'coupon_product_ids',
+            'coupon_excluded_product_ids', 'coupon_product_categories', 'coupon_excluded_product_categories',
+            'coupon_usage_limit', 'coupon_usage_limit_per_user', 'coupon_limit_usage_to_x_items',
+            'coupon_free_shipping', 'coupon_meta'
+        ]
+    };
+    
+    const optionList = options[exportType] || options['orders'];
+    return optionList.map(option => 
+        `<option value="${option}" ${option === selectedValue ? 'selected' : ''}>${option.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>`
+    ).join('');
+}
+
+function getDefaultFields(exportType) {
+    const fields = {
+        'orders': [
+            { key: 'order_id', label: 'Order ID' },
+            { key: 'order_date', label: 'Order Date' },
+            { key: 'order_status', label: 'Order Status' },
+            { key: 'customer_id', label: 'Customer ID' },
+            { key: 'billing_email', label: 'Billing Email' },
+            { key: 'order_total', label: 'Order Total' },
+            { key: 'payment_method', label: 'Payment Method' },
+            { key: 'billing_first_name', label: 'Billing First Name' },
+            { key: 'billing_last_name', label: 'Billing Last Name' },
+            { key: 'shipping_total', label: 'Shipping Total' }
+        ],
+        'order_items': [
+            { key: 'order_id', label: 'Order ID' },
+            { key: 'product_id', label: 'Product ID' },
+            { key: 'product_name', label: 'Product Name' },
+            { key: 'quantity', label: 'Quantity' },
+            { key: 'line_total', label: 'Line Total' }
+        ],
+        'customers': [
+            { key: 'customer_id', label: 'Customer ID' },
+            { key: 'email', label: 'Email' },
+            { key: 'first_name', label: 'First Name' },
+            { key: 'last_name', label: 'Last Name' },
+            { key: 'total_spent', label: 'Total Spent' }
+        ]
+    };
+    
+    return fields[exportType] || fields['orders'];
+}
+
 // Show Notification
 function showNotification(type, message) {
     const notifications = document.getElementById('notifications');
@@ -608,6 +1122,17 @@ function showNotification(type, message) {
         notification.remove();
     }, 5000);
 }
+
+// Initialize drag and drop for existing export types
+document.addEventListener('DOMContentLoaded', function() {
+    const exportTypeSections = document.querySelectorAll('.wc-s3-export-type-section');
+    exportTypeSections.forEach(section => {
+        const index = section.dataset.index;
+        if (index !== undefined) {
+            initializeDragAndDrop(parseInt(index));
+        }
+    });
+});
 
 // Auto-refresh status every 30 seconds
 setInterval(() => {

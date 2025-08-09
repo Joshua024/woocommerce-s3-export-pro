@@ -773,4 +773,55 @@
     .wc-s3-field-mapping-actions {
         flex-direction: column;
     }
+}
+
+/* Additional Field Mapping Styles */
+.wc-s3-field-mapping-table input[type="text"],
+.wc-s3-field-mapping-table select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.wc-s3-field-mapping-table input[type="checkbox"] {
+    margin: 0;
+}
+
+.drag-handle {
+    cursor: grab;
+    color: #666;
+    font-size: 14px;
+    text-align: center;
+    user-select: none;
+}
+
+.drag-handle:hover {
+    color: #333;
+}
+
+.wc-s3-field-row.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.wc-s3-field-row.drag-over {
+    border-top: 2px solid #0073aa;
+    background-color: #f0f8ff;
+}
+
+.wc-s3-field-mapping-actions {
+    display: flex !important;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f5f5f5;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.wc-s3-field-mapping-actions .wc-s3-btn {
+    margin: 0;
 } 
