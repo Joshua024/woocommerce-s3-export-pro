@@ -300,7 +300,8 @@ function get_data_source_options($export_type, $selected_value = '') {
         </button>
         
         <button class="wc-s3-btn info" onclick="showExportHistory()">
-            📊 Export History
+            <span class="wc-s3-btn-icon">📊</span>
+            Export History
         </button>
     </div>
 
