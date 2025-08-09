@@ -819,7 +819,7 @@ function addExportType() {
                     </tr>
                 </thead>
                 <tbody class="wc-s3-field-mapping-tbody" id="field-mapping-tbody-${newIndex}">
-                    <!-- Default fields will be loaded here -->
+                    <!-- New export type starts with no fields -->
                 </tbody>
                     </table>
                 </div>
@@ -838,8 +838,7 @@ function addExportType() {
     
     container.insertAdjacentHTML('beforeend', newExportType);
     
-    // Load default fields for the new export type
-    loadDefaultFields(newIndex, 'orders');
+    // Initialize drag and drop for the new export type
     initializeDragAndDrop(newIndex);
 }
 
