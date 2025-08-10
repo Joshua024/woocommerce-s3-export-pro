@@ -103,8 +103,8 @@ class Automation_Manager {
                         $s3_config['bucket'] ?: 'fundsonline-exports',
                         $file_data['file_name'],
                         $file_data['file_path'],
-                        $file_prefix,
-                        $s3_folder
+                        $s3_folder,
+                        ''
                     );
                     $success_count++;
                     $this->log("[$timestamp] Export '{$export_type['name']}' successful", $log_file);
@@ -243,8 +243,8 @@ class Automation_Manager {
                         $s3_config['bucket'] ?: 'fundsonline-exports',
                         $file_data['file_name'],
                         $file_data['file_path'],
-                        $file_prefix,
-                        $s3_folder
+                        $s3_folder,
+                        ''
                     );
                     
                     if ($upload_result) {
@@ -968,8 +968,8 @@ class Automation_Manager {
                     $s3_config['bucket'] ?: 'fundsonline-exports',
                     $file_data['file_name'],
                     $file_data['file_path'],
-                    $file_prefix,
-                    $s3_folder
+                    $s3_folder,
+                    ''
                 );
                 
                 $this->log("[$timestamp] Export '{$export_type['name']}' completed successfully", $log_file);

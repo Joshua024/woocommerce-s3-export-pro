@@ -88,12 +88,10 @@ class S3_Uploader {
             return false;
         }
         
-        // Build S3 key with optional folder
-        $s3_key = $directory;
-        if (!empty($folder)) {
-            $s3_key = $folder . '/' . $directory;
-        }
-        $s3_key .= '/' . $filename;
+        // Build S3 key: $directory is the top-level folder in the bucket (e.g. FundsOnlineWebsiteSales)
+        // $folder is optional subfolder. We no longer use file prefix as a folder name.
+        $parts = array_filter([$directory, $folder, $filename], function($p) { return $p !== '' && $p !== null; });
+        $s3_key = implode('/', $parts);
         
         // Verify file exists and is readable
         if (!file_exists($file_path)) {
