@@ -465,13 +465,17 @@ function get_data_source_options($export_type, $selected_value = '') {
                         </select>
                     </div>
                     
-                    <button type="button" class="wc-s3-btn primary" onclick="loadExportHistory()">🔍 Filter</button>
+                    <div style="display:flex; gap:8px; align-items:flex-end;">
+                        <button type="button" class="wc-s3-btn primary small" onclick="loadExportHistory()">🔍 Filter</button>
+                        <button type="button" id="delete-selected-btn" class="wc-s3-btn error small" onclick="deleteSelectedExportRecords()" disabled>🗑️ Delete Selected</button>
+                    </div>
                 </div>
                 
                 <div id="export-history-table" class="wc-s3-table-container">
                     <table class="wc-s3-table">
                         <thead>
                             <tr>
+                                <th style="width:36px;"><input type="checkbox" id="history_select_all"></th>
                                 <th>Date</th>
                                 <th>Export Type</th>
                                 <th>File Name</th>
@@ -1054,7 +1058,7 @@ function loadExportHistory() {
     const exportType = document.getElementById('history_export_type').value;
 
     const tbody = document.getElementById('export-history-tbody');
-    tbody.innerHTML = '<tr><td colspan="6" class="wc-s3-loading">Loading export history...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="wc-s3-loading">Loading export history...</td></tr>';
 
     fetch(wcS3ExportPro.ajaxUrl, {
         method: 'POST',
@@ -1076,6 +1080,7 @@ function loadExportHistory() {
                 const fileSize = item.file_size ? formatFileSize(item.file_size) : 'N/A';
                 
                 row.innerHTML = `
+                    <td><input type=\"checkbox\" class=\"history-select\" value=\"${item.id}\"></td>
                     <td>${item.date}</td>
                     <td>${item.export_type_name || item.export_type}</td>
                     <td>${item.file_name}</td>
@@ -1089,7 +1094,7 @@ function loadExportHistory() {
                 tbody.appendChild(row);
             });
         } else {
-            tbody.innerHTML = '<tr><td colspan="6" class="wc-s3-no-data">No export history found for the selected date range.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="wc-s3-no-data">No export history found for the selected date range.</td></tr>';
         }
     })
     .catch(error => {
@@ -1969,7 +1974,54 @@ document.addEventListener('DOMContentLoaded', function() {
             removeFieldRow(exportTypeIndex, fieldIndex);
         }
     });
+
+    // Bulk selection handlers for export history
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.id === 'history_select_all') {
+            const checked = e.target.checked;
+            document.querySelectorAll('#export-history-tbody .history-select').forEach(cb => cb.checked = checked);
+            updateDeleteSelectedState();
+        }
+        if (e.target && e.target.classList.contains('history-select')) {
+            syncHistorySelectAll();
+            updateDeleteSelectedState();
+        }
+    });
 });
+
+function syncHistorySelectAll() {
+    const all = document.querySelectorAll('#export-history-tbody .history-select');
+    const selected = document.querySelectorAll('#export-history-tbody .history-select:checked');
+    const selectAll = document.getElementById('history_select_all');
+    if (!selectAll) return;
+    if (selected.length === 0) { selectAll.checked = false; selectAll.indeterminate = false; }
+    else if (selected.length === all.length) { selectAll.checked = true; selectAll.indeterminate = false; }
+    else { selectAll.checked = false; selectAll.indeterminate = true; }
+}
+
+function updateDeleteSelectedState() {
+    const btn = document.getElementById('delete-selected-btn');
+    if (!btn) return;
+    const selected = document.querySelectorAll('#export-history-tbody .history-select:checked');
+    btn.disabled = selected.length === 0;
+}
+
+function deleteSelectedExportRecords() {
+    const ids = Array.from(document.querySelectorAll('#export-history-tbody .history-select:checked')).map(cb => cb.value);
+    if (ids.length === 0) return;
+    if (!confirm(`Delete ${ids.length} selected record(s)? This will also delete the associated files if they exist.`)) return;
+    const params = new URLSearchParams();
+    params.append('action', 'wc_s3_delete_export_records');
+    params.append('nonce', wcS3ExportPro.nonce);
+    ids.forEach(id => params.append('record_ids[]', id));
+    fetch(wcS3ExportPro.ajaxUrl, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() })
+        .then(r => r.json())
+        .then(data => {
+            showNotification(data.success ? 'success' : 'error', (data.data && data.data.message) ? data.data.message : (data.success ? 'Deleted' : 'Delete failed'));
+            loadExportHistory();
+        })
+        .catch(err => showNotification('error', 'Delete failed: ' + err.message));
+}
 
 // Auto-refresh status every 30 seconds
 setInterval(() => {

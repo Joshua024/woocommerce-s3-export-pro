@@ -797,6 +797,18 @@
     border-radius: 4px;
 }
 
+/* Make history filter buttons compact */
+.wc-s3-history-filters .wc-s3-btn.small {
+    min-height: 34px;
+}
+
+/* Tighter grid for history filters so the filter button isn't too big */
+.wc-s3-history-filters {
+    grid-template-columns: repeat(4, minmax(160px, 1fr)) auto;
+    gap: 12px;
+    align-items: end;
+}
+
 /* Drag and Drop Styles */
 .wc-s3-field-row.dragging {
     opacity: 0.5;

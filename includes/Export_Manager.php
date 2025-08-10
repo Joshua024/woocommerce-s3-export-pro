@@ -69,6 +69,7 @@ class Export_Manager {
         add_action('wp_ajax_wc_s3_get_log_content', array($this, 'ajax_get_log_content'));
         add_action('wp_ajax_wc_s3_get_export_history', array($this, 'ajax_get_export_history'));
         add_action('wp_ajax_wc_s3_delete_export_record', array($this, 'ajax_delete_export_record'));
+        add_action('wp_ajax_wc_s3_delete_export_records', array($this, 'ajax_delete_export_records'));
         add_action('wp_ajax_wc_s3_download_export_file', array($this, 'ajax_download_export_file'));
         add_action('wp_ajax_wc_s3_test_ajax', array($this, 'ajax_test_ajax'));
         add_action('wp_ajax_wc_s3_simple_test', array($this, 'ajax_simple_test'));
@@ -383,6 +384,32 @@ class Export_Manager {
         } else {
             wp_send_json_error(array('message' => 'Failed to delete export record.'));
         }
+    }
+
+    /**
+     * AJAX: Delete multiple export records
+     */
+    public function ajax_delete_export_records() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        $record_ids = isset($_POST['record_ids']) ? (array) $_POST['record_ids'] : array();
+        if (empty($record_ids)) {
+            wp_send_json_error(array('message' => 'No record IDs provided.'));
+        }
+        $export_history = new Export_History();
+        $deleted = 0;
+        foreach ($record_ids as $record_id) {
+            $record_id = sanitize_text_field($record_id);
+            if ($export_history->delete_export_record($record_id)) {
+                $deleted++;
+            }
+        }
+        if ($deleted > 0) {
+            wp_send_json_success(array('message' => sprintf('%d record(s) deleted.', $deleted)));
+        }
+        wp_send_json_error(array('message' => 'No records were deleted.'));
     }
     
     /**
