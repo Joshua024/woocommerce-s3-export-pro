@@ -43,7 +43,7 @@ class CSV_Generator {
         }
         
         // Extract data based on export type
-        $data = $this->extract_data($export_type['type'], $date_param);
+        $data = $this->extract_data($export_type['type'], $date_param, $export_type);
         
         $this->log("[$timestamp] Data extracted count: " . count($data), $log_file);
         
@@ -67,10 +67,10 @@ class CSV_Generator {
     /**
      * Extract data from WooCommerce based on export type
      */
-    private function extract_data($export_type, $date_param = null) {
+    private function extract_data($export_type, $date_param = null, $export_type_config = null) {
         switch ($export_type) {
             case 'orders':
-                return $this->extract_orders_data($date_param);
+                return $this->extract_orders_data($date_param, $export_type_config);
             case 'customers':
                 return $this->extract_customers_data($date_param);
             case 'products':
@@ -85,13 +85,24 @@ class CSV_Generator {
     /**
      * Extract orders data
      */
-    private function extract_orders_data($date_param = null) {
+    private function extract_orders_data($date_param = null, $export_type = null) {
         $log_file = $this->get_log_file();
         $timestamp = date('Y-m-d H:i:s');
         
+        // Get configured statuses from export type, or use all statuses if none specified
+        $statuses = array();
+        if ($export_type && isset($export_type['statuses']) && !empty($export_type['statuses'])) {
+            $statuses = $export_type['statuses'];
+            $this->log("[$timestamp] Using configured statuses: " . implode(', ', $statuses), $log_file);
+        } else {
+            // Default to all order statuses if none specified (like WooCommerce CSV Export plugin)
+            $statuses = array_keys(wc_get_order_statuses());
+            $this->log("[$timestamp] No statuses configured, using all order statuses: " . implode(', ', $statuses), $log_file);
+        }
+        
         $args = array(
             'limit' => -1,
-            'status' => array('wc-completed', 'wc-processing', 'wc-on-hold'),
+            'status' => $statuses,
             'return' => 'objects'
         );
         

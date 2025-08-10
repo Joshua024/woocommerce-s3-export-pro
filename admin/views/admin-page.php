@@ -622,6 +622,24 @@ function get_data_source_options($export_type, $selected_value = '') {
                                 </select>
                                 <p class="description">The type of data to export</p>
                             </div>
+                            
+                            <div class="wc-s3-form-group order-statuses-field" id="order_statuses_<?php echo $index; ?>_container" style="<?php echo ($export_type['type'] ?? 'orders') === 'orders' ? '' : 'display: none;'; ?>">
+                                <label for="export_type_<?php echo $index; ?>_statuses">Order Statuses</label>
+                                <select id="export_type_<?php echo $index; ?>_statuses" 
+                                        name="export_types[<?php echo $index; ?>][statuses][]" 
+                                        multiple class="wc-enhanced-select" 
+                                        data-placeholder="Select order statuses (leave blank for all statuses)">
+                                    <?php
+                                    $order_statuses = wc_get_order_statuses();
+                                    $selected_statuses = $export_type['statuses'] ?? array();
+                                    foreach ($order_statuses as $status_key => $status_label) {
+                                        $selected = in_array($status_key, $selected_statuses) ? 'selected' : '';
+                                        echo '<option value="' . esc_attr($status_key) . '" ' . $selected . '>' . esc_html($status_label) . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                                <p class="description">Orders with these statuses will be included. Leave blank to include all statuses.</p>
+                            </div>
                         </div>
                         
                         <div class="wc-s3-form-row">
@@ -1791,6 +1809,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const index = section.dataset.index;
         if (index !== undefined) {
             initializeDragAndDrop(parseInt(index));
+        }
+    });
+    
+    // Handle export type change to show/hide order statuses field
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('select[name*="[type]"]')) {
+            const exportTypeSection = e.target.closest('.wc-s3-export-type-section');
+            const index = exportTypeSection.dataset.index;
+            const orderStatusesContainer = document.getElementById(`order_statuses_${index}_container`);
+            
+            if (e.target.value === 'orders') {
+                orderStatusesContainer.style.display = 'block';
+            } else {
+                orderStatusesContainer.style.display = 'none';
+            }
         }
     });
     

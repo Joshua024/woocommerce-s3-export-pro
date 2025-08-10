@@ -459,6 +459,7 @@ class Export_Manager {
                         'local_uploads_folder' => sanitize_text_field($type['local_uploads_folder'] ?? ''),
                         'file_prefix' => sanitize_text_field($type['file_prefix'] ?? ''),
                         'description' => sanitize_textarea_field($type['description'] ?? ''),
+                        'statuses' => isset($type['statuses']) && is_array($type['statuses']) ? array_map('sanitize_text_field', $type['statuses']) : array(),
                         'field_mappings' => $field_mappings
                     );
                 }
