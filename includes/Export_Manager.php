@@ -484,6 +484,12 @@ class Export_Manager {
      * AJAX: Save export types config
      */
     public function ajax_save_export_types_config() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
         error_log('WC S3 Export Pro: ajax_save_export_types_config called!');
         error_log('WC S3 Export Pro: POST data: ' . print_r($_POST, true));
         
@@ -522,6 +528,7 @@ class Export_Manager {
                         'local_uploads_folder' => sanitize_text_field($type['local_uploads_folder'] ?? ''),
                         'file_prefix' => sanitize_text_field($type['file_prefix'] ?? ''),
                         'description' => sanitize_textarea_field($type['description'] ?? ''),
+                        'statuses' => isset($type['statuses']) && is_array($type['statuses']) ? array_map('sanitize_text_field', $type['statuses']) : array(),
                         'field_mappings' => $field_mappings
                     );
                 }
