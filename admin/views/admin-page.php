@@ -1656,6 +1656,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log('Sending form data to:', wcS3ExportPro.ajaxUrl);
             
+            // Debug: Log the form data being sent
+            for (let [key, value] of formData.entries()) {
+                console.log('Form data:', key, '=', value);
+            }
+            
             fetch(wcS3ExportPro.ajaxUrl, {
                 method: 'POST',
                 body: formData
