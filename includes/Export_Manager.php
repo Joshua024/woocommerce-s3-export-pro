@@ -434,7 +434,8 @@ class Export_Manager {
         
         $status = $this->monitoring->get_export_status();
         
-        wp_send_json($status);
+        // Return in wp_send_json_success format so the admin JS can detect success
+        wp_send_json_success($status);
     }
     
     /**

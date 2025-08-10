@@ -155,62 +155,80 @@ class Monitoring {
             'automation_enabled' => false,
             'pending_jobs' => 0,
         );
-        
-        // Check last export (either our custom cron or WC CSV Export AS jobs)
-        if (function_exists('as_get_scheduled_actions')) {
-            $recent_completed_wc = as_get_scheduled_actions(array(
-                'hook' => 'wc_customer_order_csv_export_auto_export',
-                'status' => 'complete',
-                'per_page' => 1
-            ));
-            $recent_completed_custom = as_get_scheduled_actions(array(
-                'hook' => 'wc_s3_export_automation',
-                'status' => 'complete',
-                'per_page' => 1
-            ));
-            $candidate = !empty($recent_completed_wc) ? reset($recent_completed_wc) : (!empty($recent_completed_custom) ? reset($recent_completed_custom) : null);
-            if ($candidate) {
-                $status['last_export'] = $candidate->get_schedule()->get_date()->format('Y-m-d H:i:s');
-            }
-        }
-        
-        // Check S3 connection
+
+        // S3 connected
         $s3_config = $this->settings->get_s3_config();
         $status['s3_connected'] = !empty($s3_config['access_key']) && !empty($s3_config['secret_key']);
-        
-        // Check automation
+
+        // Determine last export and totals from our history (independent of WC AS)
+        try {
+            $history = new Export_History();
+            $latest = $history->get_export_history(1);
+            if (!empty($latest)) {
+                $status['last_export'] = $latest[0]['created_at'];
+            }
+            $stats = $history->get_export_statistics();
+            $status['total_exports'] = intval($stats['total_exports']);
+        } catch (\Exception $e) {
+            // ignore
+        }
+
+        // Automation enabled: consider either our own schedules or WC CSV settings
         global $wpdb;
         $automation_count = $wpdb->get_var(
-            "SELECT COUNT(*) FROM {$wpdb->options} 
-             WHERE option_name LIKE '%wc_customer_order_csv_export%auto_export_enabled%' 
-             AND option_value = 'yes'"
+            "SELECT COUNT(*) FROM {$wpdb->options} \
+             WHERE (option_name LIKE '%wc_customer_order_csv_export%auto_export_enabled%' AND option_value='yes') \
+                OR (option_name='wc_s3_export_pro_export_types' AND option_value IS NOT NULL AND option_value <> '')"
         );
-        $status['automation_enabled'] = $automation_count > 0;
-        
-        // Check pending jobs (count both WC and our custom jobs)
-        if (function_exists('as_get_scheduled_actions')) {
-            $pending_wc = as_get_scheduled_actions(array('hook' => 'wc_customer_order_csv_export_auto_export', 'status' => 'pending'));
-            $pending_custom = as_get_scheduled_actions(array('hook' => 'wc_s3_export_automation', 'status' => 'pending'));
-            $status['pending_jobs'] = count($pending_wc) + count($pending_custom);
-            
-            if ($status['automation_enabled'] || $status['pending_jobs'] > 0) {
-                $status['status'] = 'active';
+        $status['automation_enabled'] = intval($automation_count) > 0;
+
+        // Pending jobs and next run: combine WP‑Cron (our custom per-type jobs) and WC Action Scheduler
+        $pending_count = 0;
+        $next_timestamps = array();
+
+        // WP‑Cron events for our hooks
+        if (function_exists('_get_cron_array')) {
+            $cron = _get_cron_array();
+            if (is_array($cron)) {
+                foreach ($cron as $timestamp => $hooks) {
+                    foreach ($hooks as $hook => $events) {
+                        if (strpos($hook, 'wc_s3_export_') === 0) {
+                            if ($timestamp >= time()) {
+                                $pending_count += count($events);
+                                $next_timestamps[] = $timestamp;
+                            }
+                        }
+                    }
+                }
             }
-            
-            // Get next export time
-            $next = null;
-            if (!empty($pending_wc)) { $next = reset($pending_wc); }
-            if (!$next && !empty($pending_custom)) { $next = reset($pending_custom); }
-            if ($next) {
-                $status['next_export'] = $next->get_schedule()->get_date()->format('Y-m-d H:i:s');
-            }
-            
-            // Total exports
-            $completed_wc = as_get_scheduled_actions(array('hook' => 'wc_customer_order_csv_export_auto_export', 'status' => 'complete', 'per_page' => -1));
-            $completed_custom = as_get_scheduled_actions(array('hook' => 'wc_s3_export_automation', 'status' => 'complete', 'per_page' => -1));
-            $status['total_exports'] = count($completed_wc) + count($completed_custom);
         }
-        
+
+        // WooCommerce Action Scheduler (CSV Export) if available
+        if (function_exists('as_get_scheduled_actions')) {
+            $pending_wc = as_get_scheduled_actions(array(
+                'hook' => 'wc_customer_order_csv_export_auto_export',
+                'status' => 'pending'
+            ));
+            if (is_array($pending_wc)) {
+                $pending_count += count($pending_wc);
+                if (!empty($pending_wc)) {
+                    $first = reset($pending_wc);
+                    if ($first && method_exists($first, 'get_schedule')) {
+                        $next_timestamps[] = $first->get_schedule()->get_date()->getTimestamp();
+                    }
+                }
+            }
+        }
+
+        $status['pending_jobs'] = $pending_count;
+        if (!empty($next_timestamps)) {
+            $status['next_export'] = wp_date('Y-m-d H:i:s', min($next_timestamps));
+        }
+
+        if ($status['automation_enabled'] || $status['pending_jobs'] > 0) {
+            $status['status'] = 'active';
+        }
+
         return $status;
     }
     
