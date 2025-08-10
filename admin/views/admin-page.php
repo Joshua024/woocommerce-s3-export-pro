@@ -1627,9 +1627,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const exportTypesForm = document.getElementById('export-types-form');
     if (exportTypesForm) {
         console.log('Export types form found, attaching event listener');
-        exportTypesForm.addEventListener('submit', function(e) {
+        
+        // Remove any existing event listeners
+        const newForm = exportTypesForm.cloneNode(true);
+        exportTypesForm.parentNode.replaceChild(newForm, exportTypesForm);
+        
+        newForm.addEventListener('submit', function(e) {
             e.preventDefault();
             console.log('Form submission started');
+            
+            // Prevent multiple submissions
+            if (this.submitting) {
+                console.log('Form already submitting, ignoring');
+                return;
+            }
+            
+            this.submitting = true;
             
             const formData = new FormData(this);
             formData.append('action', 'wc_s3_save_export_types_config');
@@ -1663,9 +1676,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 showNotification('error', 'Save failed: ' + error.message);
             })
             .finally(() => {
-                // Restore button state
+                // Restore button state and allow resubmission
                 submitButton.textContent = originalText;
                 submitButton.disabled = false;
+                this.submitting = false;
             });
         });
     } else {

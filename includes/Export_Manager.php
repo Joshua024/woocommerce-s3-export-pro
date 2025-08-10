@@ -451,6 +451,9 @@ class Export_Manager {
         
         $export_types = $_POST['export_types'] ?? array();
         
+        // Debug: Log the received data
+        error_log('WC S3 Export Pro: Received export_types data: ' . print_r($export_types, true));
+        
         // Sanitize the export types data
         $sanitized_export_types = array();
         
@@ -475,7 +478,13 @@ class Export_Manager {
             }
         }
         
+        // Debug: Log the sanitized data
+        error_log('WC S3 Export Pro: Sanitized export_types data: ' . print_r($sanitized_export_types, true));
+        
         $result = $this->settings->update_export_types_config($sanitized_export_types);
+        
+        // Debug: Log the result
+        error_log('WC S3 Export Pro: Update result: ' . ($result ? 'true' : 'false'));
         
         if ($result) {
             // Set up automation for the new configuration

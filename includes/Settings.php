@@ -362,7 +362,15 @@ class Settings {
      * Update export types config
      */
     public function update_export_types_config($config) {
-        return update_option(self::EXPORT_TYPES_OPTION, $config);
+        // Debug: Log the config being saved
+        error_log('WC S3 Export Pro: Saving config: ' . print_r($config, true));
+        
+        $result = update_option(self::EXPORT_TYPES_OPTION, $config);
+        
+        // Debug: Log the result
+        error_log('WC S3 Export Pro: update_option result: ' . ($result ? 'true' : 'false'));
+        
+        return $result;
     }
     
     /**
