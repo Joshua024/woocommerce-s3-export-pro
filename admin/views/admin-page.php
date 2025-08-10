@@ -417,7 +417,6 @@ function get_data_source_options($export_type, $selected_value = '') {
                     </div>
                     
                     <div class="wc-s3-modal-actions">
-                        <button type="button" class="wc-s3-btn secondary" onclick="testManualExport()">Test AJAX</button>
                         <button type="button" class="wc-s3-btn secondary" onclick="closeManualExportModal()">Cancel</button>
                         <button type="submit" class="wc-s3-btn primary">
                             <span class="wc-s3-loading" id="manual-export-loading" style="display: none;"></span>
