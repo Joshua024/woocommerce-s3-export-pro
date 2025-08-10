@@ -1048,9 +1048,11 @@
 }
 
 .wc-s3-checkbox-label input[type="checkbox"] {
-    margin-right: 0.75rem;
-    width: 18px;
-    height: 18px;
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
 }
 
 .wc-s3-checkbox-label .checkmark {
@@ -1228,9 +1230,11 @@
 }
 
 .wc-s3-checkbox input[type="checkbox"] {
-    margin-right: 0.75rem;
-    width: 18px;
-    height: 18px;
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
 }
 
 .wc-s3-checkbox .checkmark {
