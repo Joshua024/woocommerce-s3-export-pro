@@ -706,7 +706,9 @@ function get_data_source_options($export_type, $selected_value = '') {
                                     <tbody class="wc-s3-field-mapping-tbody" id="field-mapping-tbody-<?php echo $index; ?>">
                                         <?php
                                         $current_field_mappings = $export_type['field_mappings'] ?? array();
-                                        if (empty($current_field_mappings)) {
+                                        // Only load default fields for truly new export types (those without a proper ID)
+                                        $has_proper_id = !empty($export_type['id']) && strpos($export_type['id'], '_') !== false;
+                                        if (empty($current_field_mappings) && !$has_proper_id) {
                                             // Load default fields for this export type
                                             $default_fields = $settings->get_available_fields($export_type['type'] ?? 'orders');
                                             $current_field_mappings = array();

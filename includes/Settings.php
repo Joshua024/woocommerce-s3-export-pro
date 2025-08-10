@@ -235,12 +235,15 @@ class Settings {
                 $field_index = 0;
                 
                 foreach ($export_type['field_mappings'] as $data_source => $column_name) {
-                    $converted_mappings[] = array(
-                        'enabled' => true,
-                        'column_name' => $column_name,
-                        'data_source' => $data_source
-                    );
-                    $field_index++;
+                    // Skip empty column names to prevent issues
+                    if (!empty($column_name) && !empty($data_source)) {
+                        $converted_mappings[] = array(
+                            'enabled' => true,
+                            'column_name' => $column_name,
+                            'data_source' => $data_source
+                        );
+                        $field_index++;
+                    }
                 }
                 
                 $export_type['field_mappings'] = $converted_mappings;
