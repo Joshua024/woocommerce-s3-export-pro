@@ -202,16 +202,17 @@ class Automation_Manager {
                     continue;
                 }
                 
-                // Check for duplicate export
+                // Check for duplicate export - but allow manual exports to override
                 if ($this->export_history->export_exists($export_type_id, $date, $export_type_config['name'])) {
-                    $this->log("[$timestamp] Export already exists for $export_type_id on $date - skipping", $log_file);
-                    continue;
+                    $this->log("[$timestamp] Export already exists for $export_type_id on $date - but continuing for manual export", $log_file);
                 }
                 
                 // Create export file
+                $this->log("[$timestamp] Creating export for type: {$export_type_config['name']}", $log_file);
                 $file_data = $this->create_csv_export_file_for_type($export_type_config, $date);
                 
                 if (!empty($file_data)) {
+                    $this->log("[$timestamp] Successfully created CSV file for {$export_type_config['name']} on $date", $log_file);
                     // Validate file integrity
                     $validation = $this->export_history->validate_file_integrity($file_data['file_path']);
                     if (!$validation['valid']) {
@@ -259,7 +260,7 @@ class Automation_Manager {
                         $this->log("[$timestamp] S3 upload failed for $export_type_id on $date: " . $file_data['file_name'], $log_file);
                     }
                 } else {
-                    $this->log("[$timestamp] Failed to create export file for $export_type_id on $date", $log_file);
+                    $this->log("[$timestamp] Failed to create CSV file for {$export_type_config['name']} on $date", $log_file);
                 }
                 
                 $total_files++;

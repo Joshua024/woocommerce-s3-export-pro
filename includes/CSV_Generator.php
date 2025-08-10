@@ -53,15 +53,20 @@ class CSV_Generator {
         }
         
         // Generate CSV file
-        $file_data = $this->create_csv_file($data, $field_mappings, $export_type, $date_param);
-        
-        if ($file_data) {
-            $this->log("[$timestamp] CSV file generated successfully for: {$export_type['name']}", $log_file);
-        } else {
-            $this->log("[$timestamp] Failed to generate CSV file for: {$export_type['name']}", $log_file);
+        try {
+            $file_data = $this->create_csv_file($data, $field_mappings, $export_type, $date_param);
+            
+            if ($file_data) {
+                $this->log("[$timestamp] CSV file generated successfully for: {$export_type['name']}", $log_file);
+            } else {
+                $this->log("[$timestamp] Failed to generate CSV file for: {$export_type['name']} - create_csv_file returned false", $log_file);
+            }
+            
+            return $file_data;
+        } catch (\Exception $e) {
+            $this->log("[$timestamp] Exception during CSV generation for {$export_type['name']}: " . $e->getMessage(), $log_file);
+            return false;
         }
-        
-        return $file_data;
     }
     
     /**
@@ -107,7 +112,14 @@ class CSV_Generator {
         );
         
         if ($date_param) {
-            $args['date_created'] = $date_param;
+            // Convert date to proper format for WooCommerce
+            $date_obj = \DateTime::createFromFormat('Y-m-d', $date_param);
+            if ($date_obj) {
+                $start_date = $date_obj->format('Y-m-d 00:00:00');
+                $end_date = $date_obj->format('Y-m-d 23:59:59');
+                $args['date_created'] = $start_date . '...' . $end_date;
+                $this->log("[$timestamp] Filtering orders by date range: $start_date to $end_date", $log_file);
+            }
         }
         
         $this->log("[$timestamp] Extracting orders with args: " . print_r($args, true), $log_file);
@@ -407,10 +419,9 @@ class CSV_Generator {
         
         $file_path = $folder_path . '/' . $filename;
         
-        // Check if file already exists
+        // Check if file already exists - but allow overwriting for manual exports
         if (file_exists($file_path)) {
-            $this->log("[$timestamp] CSV file already exists: {$filename}. Skipping generation.", $log_file);
-            return false;
+            $this->log("[$timestamp] CSV file already exists: {$filename}. Will overwrite.", $log_file);
         }
         
         // Create CSV file
