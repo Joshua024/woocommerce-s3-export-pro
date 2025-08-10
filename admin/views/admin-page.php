@@ -1531,20 +1531,38 @@ function handleDrop(e) {
 function getDataSourceOptionsHTML(exportType, selectedValue = '') {
     const options = {
         'orders': [
-            'order_id', 'order_number', 'order_number_formatted', 'order_date', 'order_status',
-            'customer_id', 'billing_first_name', 'billing_last_name', 'billing_email', 'billing_phone',
-            'billing_address_1', 'billing_address_2', 'billing_city', 'billing_state', 'billing_postcode', 'billing_country',
-            'shipping_first_name', 'shipping_last_name', 'shipping_address_1', 'shipping_address_2',
-            'shipping_city', 'shipping_state', 'shipping_postcode', 'shipping_country',
-            'payment_method', 'payment_method_title', 'order_total', 'order_subtotal', 'order_tax',
-            'order_shipping', 'order_discount', 'order_currency', 'customer_note', 'shipping_total',
-            'shipping_tax_total', 'fee_total', 'tax_total', 'discount_total', 'refunded_total',
-            'shipping_method', 'order_meta'
+            'order_id', 'order_number', 'order_number_formatted', 'order_date', 'status',
+            'shipping_total', 'shipping_tax_total', 'fee_total', 'fee_tax_total', 'tax_total',
+            'discount_total', 'order_total', 'refunded_total', 'order_currency', 'payment_method',
+            'shipping_method', 'customer_id', 'billing_first_name', 'billing_last_name', 'billing_full_name',
+            'billing_company', 'vat_number', 'billing_email', 'billing_phone', 'billing_address_1',
+            'billing_address_2', 'billing_postcode', 'billing_city', 'billing_state', 'billing_state_code',
+            'billing_country', 'shipping_first_name', 'shipping_last_name', 'shipping_full_name',
+            'shipping_address_1', 'shipping_address_2', 'shipping_postcode', 'shipping_city',
+            'shipping_state', 'shipping_state_code', 'shipping_country', 'shipping_company',
+            'customer_note', 'item_id', 'item_product_id', 'item_name', 'item_sku', 'item_quantity',
+            'item_subtotal', 'item_subtotal_tax', 'item_total', 'item_total_tax', 'item_refunded',
+            'item_refunded_qty', 'item_meta', 'item_price', 'line_items', 'shipping_items',
+            'fee_items', 'tax_items', 'coupon_items', 'refunds', 'order_notes',
+            'download_permissions', 'order_meta'
         ],
         'order_items': [
             'order_id', 'order_item_id', 'product_id', 'product_name', 'product_sku',
             'product_variation_id', 'product_variation_sku', 'product_variation_attributes',
-            'quantity', 'line_total', 'line_subtotal', 'line_tax', 'line_subtotal_tax', 'product_meta'
+            'quantity', 'line_total', 'line_subtotal', 'line_tax', 'line_subtotal_tax', 'product_meta',
+            'order_date', 'order_status', 'order_number', 'order_number_formatted', 'customer_id',
+            'billing_first_name', 'billing_last_name', 'billing_email', 'billing_phone',
+            'billing_address_1', 'billing_address_2', 'billing_city', 'billing_state',
+            'billing_postcode', 'billing_country', 'shipping_first_name', 'shipping_last_name',
+            'shipping_address_1', 'shipping_address_2', 'shipping_city', 'shipping_state',
+            'shipping_postcode', 'shipping_country', 'payment_method', 'payment_method_title',
+            'order_total', 'order_subtotal', 'order_tax', 'order_shipping', 'order_discount',
+            'order_currency', 'customer_note', 'shipping_total', 'shipping_tax_total', 'fee_total',
+            'tax_total', 'discount_total', 'refunded_total', 'shipping_method', 'order_meta',
+            'product_type', 'product_status', 'product_price', 'product_regular_price',
+            'product_sale_price', 'product_description', 'product_short_description',
+            'product_categories', 'product_tags', 'product_stock_quantity', 'product_stock_status',
+            'product_weight', 'product_dimensions'
         ],
         'customers': [
             'customer_id', 'user_id', 'username', 'email', 'first_name', 'last_name', 'display_name',
@@ -1569,9 +1587,80 @@ function getDataSourceOptionsHTML(exportType, selectedValue = '') {
     };
     
     const optionList = options[exportType] || options['orders'];
-    return optionList.map(option => 
-        `<option value="${option}" ${option === selectedValue ? 'selected' : ''}>${option.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>`
-    ).join('');
+    
+    // Create a mapping of field keys to proper labels
+    const fieldLabels = {
+        'order_id': 'Order ID',
+        'order_number': 'Order Number',
+        'order_number_formatted': 'Order Number (Formatted)',
+        'order_date': 'Order Date',
+        'status': 'Order Status',
+        'shipping_total': 'Shipping Total',
+        'shipping_tax_total': 'Shipping Tax Total',
+        'fee_total': 'Fee Total',
+        'fee_tax_total': 'Fee Tax Total',
+        'tax_total': 'Tax Total',
+        'discount_total': 'Discount Total',
+        'order_total': 'Order Total',
+        'refunded_total': 'Refunded Total',
+        'order_currency': 'Order Currency',
+        'payment_method': 'Payment Method',
+        'shipping_method': 'Shipping Method',
+        'customer_id': 'Customer ID',
+        'billing_first_name': 'Billing First Name',
+        'billing_last_name': 'Billing Last Name',
+        'billing_full_name': 'Billing Full Name',
+        'billing_company': 'Billing Company',
+        'vat_number': 'VAT Number',
+        'billing_email': 'Billing Email',
+        'billing_phone': 'Billing Phone',
+        'billing_address_1': 'Billing Address 1',
+        'billing_address_2': 'Billing Address 2',
+        'billing_postcode': 'Billing Postcode',
+        'billing_city': 'Billing City',
+        'billing_state': 'Billing State',
+        'billing_state_code': 'Billing State Code',
+        'billing_country': 'Billing Country',
+        'shipping_first_name': 'Shipping First Name',
+        'shipping_last_name': 'Shipping Last Name',
+        'shipping_full_name': 'Shipping Full Name',
+        'shipping_address_1': 'Shipping Address 1',
+        'shipping_address_2': 'Shipping Address 2',
+        'shipping_postcode': 'Shipping Postcode',
+        'shipping_city': 'Shipping City',
+        'shipping_state': 'Shipping State',
+        'shipping_state_code': 'Shipping State Code',
+        'shipping_country': 'Shipping Country',
+        'shipping_company': 'Shipping Company',
+        'customer_note': 'Customer Note',
+        'item_id': 'Item ID',
+        'item_product_id': 'Item Product ID',
+        'item_name': 'Item Name',
+        'item_sku': 'Item SKU',
+        'item_quantity': 'Item Quantity',
+        'item_subtotal': 'Item Subtotal',
+        'item_subtotal_tax': 'Item Subtotal Tax',
+        'item_total': 'Item Total',
+        'item_total_tax': 'Item Total Tax',
+        'item_refunded': 'Item Refunded',
+        'item_refunded_qty': 'Item Refunded Quantity',
+        'item_meta': 'Item Meta',
+        'item_price': 'Item Price',
+        'line_items': 'Line Items',
+        'shipping_items': 'Shipping Items',
+        'fee_items': 'Fee Items',
+        'tax_items': 'Tax Items',
+        'coupon_items': 'Coupon Items',
+        'refunds': 'Refunds',
+        'order_notes': 'Order Notes',
+        'download_permissions': 'Download Permissions',
+        'order_meta': 'Order Meta'
+    };
+    
+    return optionList.map(option => {
+        const label = fieldLabels[option] || option.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        return `<option value="${option}" ${option === selectedValue ? 'selected' : ''}>${label}</option>`;
+    }).join('');
 }
 
 function getDefaultFields(exportType) {
