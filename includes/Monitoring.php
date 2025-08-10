@@ -156,17 +156,21 @@ class Monitoring {
             'pending_jobs' => 0,
         );
         
-        // Check last export
+        // Check last export (either our custom cron or WC CSV Export AS jobs)
         if (function_exists('as_get_scheduled_actions')) {
-            $recent_completed = as_get_scheduled_actions(array(
+            $recent_completed_wc = as_get_scheduled_actions(array(
                 'hook' => 'wc_customer_order_csv_export_auto_export',
                 'status' => 'complete',
                 'per_page' => 1
             ));
-            
-            if (!empty($recent_completed)) {
-                $last_action = reset($recent_completed);
-                $status['last_export'] = $last_action->get_schedule()->get_date()->format('Y-m-d H:i:s');
+            $recent_completed_custom = as_get_scheduled_actions(array(
+                'hook' => 'wc_s3_export_automation',
+                'status' => 'complete',
+                'per_page' => 1
+            ));
+            $candidate = !empty($recent_completed_wc) ? reset($recent_completed_wc) : (!empty($recent_completed_custom) ? reset($recent_completed_custom) : null);
+            if ($candidate) {
+                $status['last_export'] = $candidate->get_schedule()->get_date()->format('Y-m-d H:i:s');
             }
         }
         
@@ -183,32 +187,28 @@ class Monitoring {
         );
         $status['automation_enabled'] = $automation_count > 0;
         
-        // Check pending jobs
+        // Check pending jobs (count both WC and our custom jobs)
         if (function_exists('as_get_scheduled_actions')) {
-            $pending_actions = as_get_scheduled_actions(array(
-                'hook' => 'wc_customer_order_csv_export_auto_export',
-                'status' => 'pending'
-            ));
-            $status['pending_jobs'] = count($pending_actions);
+            $pending_wc = as_get_scheduled_actions(array('hook' => 'wc_customer_order_csv_export_auto_export', 'status' => 'pending'));
+            $pending_custom = as_get_scheduled_actions(array('hook' => 'wc_s3_export_automation', 'status' => 'pending'));
+            $status['pending_jobs'] = count($pending_wc) + count($pending_custom);
             
-            // Set status based on automation and pending jobs
-            if ($status['automation_enabled']) {
+            if ($status['automation_enabled'] || $status['pending_jobs'] > 0) {
                 $status['status'] = 'active';
             }
             
             // Get next export time
-            if (!empty($pending_actions)) {
-                $next_action = reset($pending_actions);
-                $status['next_export'] = $next_action->get_schedule()->get_date()->format('Y-m-d H:i:s');
+            $next = null;
+            if (!empty($pending_wc)) { $next = reset($pending_wc); }
+            if (!$next && !empty($pending_custom)) { $next = reset($pending_custom); }
+            if ($next) {
+                $status['next_export'] = $next->get_schedule()->get_date()->format('Y-m-d H:i:s');
             }
             
-            // Get total exports count
-            $completed_actions = as_get_scheduled_actions(array(
-                'hook' => 'wc_customer_order_csv_export_auto_export',
-                'status' => 'complete',
-                'per_page' => -1
-            ));
-            $status['total_exports'] = count($completed_actions);
+            // Total exports
+            $completed_wc = as_get_scheduled_actions(array('hook' => 'wc_customer_order_csv_export_auto_export', 'status' => 'complete', 'per_page' => -1));
+            $completed_custom = as_get_scheduled_actions(array('hook' => 'wc_s3_export_automation', 'status' => 'complete', 'per_page' => -1));
+            $status['total_exports'] = count($completed_wc) + count($completed_custom);
         }
         
         return $status;

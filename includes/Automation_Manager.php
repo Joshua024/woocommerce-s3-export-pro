@@ -894,25 +894,27 @@ class Automation_Manager {
         // Clear existing schedule for this export type
         wp_clear_scheduled_hook('wc_s3_export_' . $type_id);
         
-        // Set up new schedule based on frequency
+        // Set up new schedule based on frequency using site timezone
+        $tz = function_exists('wp_timezone') ? wp_timezone() : new \DateTimeZone(wp_timezone_string());
+        $now = new \DateTime('now', $tz);
         switch ($frequency) {
             case 'hourly':
                 wp_schedule_event(time(), 'hourly', 'wc_s3_export_' . $type_id);
                 break;
             case 'daily':
-                $timestamp = strtotime('today ' . $time);
-                if ($timestamp < time()) {
-                    $timestamp = strtotime('tomorrow ' . $time);
+                $dt = new \DateTime('today ' . $time, $tz);
+                if ($dt->getTimestamp() <= $now->getTimestamp()) {
+                    $dt = new \DateTime('tomorrow ' . $time, $tz);
                 }
-                wp_schedule_event($timestamp, 'daily', 'wc_s3_export_' . $type_id);
+                wp_schedule_event($dt->getTimestamp(), 'daily', 'wc_s3_export_' . $type_id);
                 break;
             case 'weekly':
-                $timestamp = strtotime('next monday ' . $time);
-                wp_schedule_event($timestamp, 'weekly', 'wc_s3_export_' . $type_id);
+                $dt = new \DateTime('next monday ' . $time, $tz);
+                wp_schedule_event($dt->getTimestamp(), 'weekly', 'wc_s3_export_' . $type_id);
                 break;
             case 'monthly':
-                $timestamp = strtotime('first day of next month ' . $time);
-                wp_schedule_event($timestamp, 'monthly', 'wc_s3_export_' . $type_id);
+                $dt = new \DateTime('first day of next month ' . $time, $tz);
+                wp_schedule_event($dt->getTimestamp(), 'monthly', 'wc_s3_export_' . $type_id);
                 break;
         }
         

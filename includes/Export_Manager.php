@@ -481,6 +481,8 @@ class Export_Manager {
         $result = $this->settings->update_settings($settings);
         
         if ($result) {
+            // Recreate schedules based on new settings
+            $this->automation_manager->setup_automation();
             wp_send_json_success(array('message' => 'Export settings saved successfully'));
         } else {
             wp_send_json_error(array('message' => 'Failed to save export settings'));
@@ -613,6 +615,8 @@ class Export_Manager {
         error_log('WC S3 Export Pro: Save result: ' . ($result ? 'SUCCESS' : 'FAILED'));
         
         if ($result) {
+            // Recreate schedules when types change
+            $this->automation_manager->setup_automation();
             wp_send_json_success(array('message' => 'Export types configuration saved successfully'));
         } else {
             wp_send_json_error(array('message' => 'Failed to save export types configuration'));
