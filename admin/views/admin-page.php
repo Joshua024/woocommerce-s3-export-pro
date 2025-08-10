@@ -417,6 +417,7 @@ function get_data_source_options($export_type, $selected_value = '') {
                     </div>
                     
                     <div class="wc-s3-modal-actions">
+                        <button type="button" class="wc-s3-btn secondary" onclick="testManualExport()">Test AJAX</button>
                         <button type="button" class="wc-s3-btn secondary" onclick="closeManualExportModal()">Cancel</button>
                         <button type="submit" class="wc-s3-btn primary">
                             <span class="wc-s3-loading" id="manual-export-loading" style="display: none;"></span>
@@ -880,6 +881,31 @@ function showManualExportModal() {
 function closeManualExportModal() {
     document.getElementById('manual-export-modal').style.display = 'none';
     document.getElementById('manual-export-form').reset();
+}
+
+function testManualExport() {
+    console.log('Testing AJAX call...');
+    
+    const formData = new FormData();
+    formData.append('action', 'wc_s3_test_manual_export');
+    formData.append('nonce', wcS3ExportPro.nonce);
+    
+    fetch(wcS3ExportPro.ajaxUrl, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        showNotification(data.success ? 'success' : 'error', data.message);
+    })
+    .catch(error => {
+        console.error('AJAX error:', error);
+        showNotification('error', 'Test failed: ' + error.message);
+    });
 }
 
 function runManualExport() {

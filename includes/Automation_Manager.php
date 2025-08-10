@@ -145,6 +145,12 @@ class Automation_Manager {
      * Run manual export for a specific date or date range
      */
     public function run_manual_export($target_date = null, $end_date = null, $export_types = array()) {
+        // Make it resilient to long runs
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(0);
+        }
+        @ini_set('memory_limit', '512M');
+        
         $log_file = $this->get_log_file();
         $timestamp = date('Y-m-d H:i:s');
         
@@ -187,20 +193,28 @@ class Automation_Manager {
         
         // If no specific export types provided, use all configured types
         if (empty($export_types)) {
+            $this->log("[$timestamp] No export types provided, loading all configured types", $log_file);
             $export_types_config = $this->settings->get_export_types_config();
+            $this->log("[$timestamp] All configured export types: " . print_r($export_types_config, true), $log_file);
             foreach ($export_types_config as $export_type) {
                 if ($export_type['enabled']) {
                     $export_types[] = $export_type['id'];
+                    $this->log("[$timestamp] Added enabled export type: " . $export_type['id'], $log_file);
                 }
             }
+        } else {
+            $this->log("[$timestamp] Using provided export types: " . print_r($export_types, true), $log_file);
         }
         
         foreach ($date_range as $date) {
             foreach ($export_types as $export_type_id) {
+                $this->log("[$timestamp] Processing export type ID: $export_type_id", $log_file);
                 $export_type_config = $this->get_export_type_config($export_type_id);
                 if (!$export_type_config) {
+                    $this->log("[$timestamp] No config found for export type ID: $export_type_id", $log_file);
                     continue;
                 }
+                $this->log("[$timestamp] Found config for export type: " . print_r($export_type_config, true), $log_file);
                 
                 // Check for duplicate export - but allow manual exports to override
                 if ($this->export_history->export_exists($export_type_id, $date, $export_type_config['name'])) {
@@ -359,8 +373,15 @@ class Automation_Manager {
         try {
             // Use the new CSV Generator for data extraction and CSV creation
             $this->log("[$timestamp] About to call CSV generator", $log_file);
+            $this->log("[$timestamp] CSV generator params - export_type: " . print_r($export_type, true), $log_file);
+            $this->log("[$timestamp] CSV generator params - date_param: $date_param", $log_file);
+            
             $file_data = $this->csv_generator->generate_csv($export_type, $date_param);
+            
             $this->log("[$timestamp] CSV generator returned: " . ($file_data ? 'SUCCESS' : 'FAILED'), $log_file);
+            if ($file_data) {
+                $this->log("[$timestamp] CSV generator file_data: " . print_r($file_data, true), $log_file);
+            }
             
             if ($file_data) {
                 $this->log("[$timestamp] CSV file generated successfully for: {$export_type['name']}", $log_file);
@@ -924,7 +945,19 @@ class Automation_Manager {
         $this->log("[$timestamp] Starting export automation for '{$export_type['name']}'", $log_file);
         
         try {
-            $file_data = $this->create_csv_export_file_for_type($export_type);
+            // Use yesterday's date for the export to avoid processing too many orders
+            $yesterday = date('Y-m-d', strtotime('-1 day'));
+            
+            // Check if there are orders for this date before processing
+            $order_count = $this->get_order_count_for_date($yesterday, $export_type['statuses']);
+            $this->log("[$timestamp] Found $order_count orders for date $yesterday", $log_file);
+            
+            if ($order_count > 0) {
+                $file_data = $this->create_csv_export_file_for_type($export_type, $yesterday);
+            } else {
+                $this->log("[$timestamp] No orders found for date $yesterday - skipping export", $log_file);
+                return;
+            }
             
             if (!empty($file_data)) {
                 $s3_config = $this->settings->get_s3_config();
@@ -1015,14 +1048,44 @@ class Automation_Manager {
      * Get export type configuration by ID
      */
     private function get_export_type_config($export_type_id) {
+        $log_file = $this->get_log_file();
+        $timestamp = date('Y-m-d H:i:s');
+        
+        $this->log("[$timestamp] get_export_type_config called with ID: $export_type_id", $log_file);
+        
         $export_types_config = $this->settings->get_export_types_config();
+        $this->log("[$timestamp] Retrieved export types config: " . print_r($export_types_config, true), $log_file);
         
         foreach ($export_types_config as $export_type) {
             if ($export_type['id'] === $export_type_id) {
+                $this->log("[$timestamp] Found matching export type: " . print_r($export_type, true), $log_file);
                 return $export_type;
             }
         }
         
+        $this->log("[$timestamp] No matching export type found for ID: $export_type_id", $log_file);
         return false;
+    }
+    
+    /**
+     * Get order count for a specific date and statuses
+     */
+    private function get_order_count_for_date($date, $statuses) {
+        $args = array(
+            'limit' => -1,
+            'status' => $statuses,
+            'return' => 'ids'
+        );
+        
+        // Add date filter
+        $date_obj = \DateTime::createFromFormat('Y-m-d', $date);
+        if ($date_obj) {
+            $start_date = $date_obj->format('Y-m-d 00:00:00');
+            $end_date = $date_obj->format('Y-m-d 23:59:59');
+            $args['date_created'] = $start_date . '...' . $end_date;
+        }
+        
+        $orders = wc_get_orders($args);
+        return count($orders);
     }
 } 

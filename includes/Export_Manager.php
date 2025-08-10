@@ -57,6 +57,7 @@ class Export_Manager {
         // AJAX handlers
         add_action('wp_ajax_wc_s3_test_s3_connection', array($this, 'ajax_test_s3_connection'));
         add_action('wp_ajax_wc_s3_run_manual_export', array($this, 'ajax_run_manual_export'));
+        add_action('wp_ajax_wc_s3_test_manual_export', array($this, 'ajax_test_manual_export'));
         add_action('wp_ajax_wc_s3_get_export_status', array($this, 'ajax_get_export_status'));
         add_action('wp_ajax_wc_s3_save_s3_config', array($this, 'ajax_save_s3_config'));
         add_action('wp_ajax_wc_s3_save_export_settings', array($this, 'ajax_save_export_settings'));
@@ -102,6 +103,30 @@ class Export_Manager {
         $this->s3_uploader = new S3_Uploader();
         $this->automation_manager = new Automation_Manager();
         $this->monitoring = new Monitoring();
+        
+        // Set up automation after components are initialized
+        $this->setup_automation();
+    }
+    
+    /**
+     * Set up automation
+     */
+    private function setup_automation() {
+        // Set up the main automation cron job
+        if (!wp_next_scheduled('wc_s3_export_automation')) {
+            wp_schedule_event(time(), 'daily', 'wc_s3_export_automation');
+        }
+        
+        // Set up health check cron job
+        if (!wp_next_scheduled('wc_s3_export_health_check')) {
+            wp_schedule_event(time(), 'daily', 'wc_s3_export_health_check');
+        }
+        
+        // Set up individual export type automation
+        $this->automation_manager->setup_automation();
+        
+        // Log automation setup
+        error_log('WC S3 Export Pro: Automation setup completed');
     }
     
     /**
@@ -217,36 +242,78 @@ class Export_Manager {
     /**
      * AJAX: Run manual export
      */
+    /**
+     * AJAX: Test manual export (simple test)
+     */
+    public function ajax_test_manual_export() {
+        try {
+            error_log('WC S3 Export Pro: ajax_test_manual_export called!');
+            error_log('WC S3 Export Pro: POST data: ' . print_r($_POST, true));
+            
+            check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+            
+            if (!current_user_can('manage_woocommerce')) {
+                wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+            }
+            
+            wp_send_json_success(array('message' => 'Test AJAX call successful!'));
+        } catch (\Exception $e) {
+            error_log('WC S3 Export Pro: Exception in ajax_test_manual_export: ' . $e->getMessage());
+            wp_send_json_error(array('message' => 'Test failed with exception: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX: Run manual export
+     */
     public function ajax_run_manual_export() {
-        error_log('WC S3 Export Pro: ajax_run_manual_export called!');
-        error_log('WC S3 Export Pro: POST data: ' . print_r($_POST, true));
-        
-        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
-        
-        if (!current_user_can('manage_woocommerce')) {
-            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
-        }
-        
-        $start_date = isset($_POST['export_start_date']) ? sanitize_text_field($_POST['export_start_date']) : date('Y-m-d');
-        $end_date = isset($_POST['export_end_date']) ? sanitize_text_field($_POST['export_end_date']) : null;
-        $export_types = isset($_POST['export_types']) ? array_map('sanitize_text_field', $_POST['export_types']) : array();
-        $force_export = isset($_POST['force_export']) ? (bool)$_POST['force_export'] : false;
-        
-        // If force export is enabled, we need to modify the export history behavior
-        if ($force_export) {
-            // This would require modifying the Automation_Manager to skip duplicate checks
-            // For now, we'll just proceed with the normal export
-        }
-        
-        $result = $this->automation_manager->run_manual_export($start_date, $end_date, $export_types);
-        
-        if ($result !== false) {
-            wp_send_json_success(array(
-                'message' => sprintf('Manual export completed successfully. %d files created.', $result),
-                'files_created' => $result
-            ));
-        } else {
-            wp_send_json_error(array('message' => 'Manual export failed. Please check the logs for details.'));
+        try {
+            error_log('WC S3 Export Pro: ajax_run_manual_export called!');
+            error_log('WC S3 Export Pro: POST data: ' . print_r($_POST, true));
+            
+            check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+            
+            if (!current_user_can('manage_woocommerce')) {
+                wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+            }
+            
+            $start_date = isset($_POST['export_start_date']) ? sanitize_text_field($_POST['export_start_date']) : date('Y-m-d');
+            $end_date = isset($_POST['export_end_date']) ? sanitize_text_field($_POST['export_end_date']) : null;
+            $export_types = isset($_POST['export_types']) ? array_map('sanitize_text_field', $_POST['export_types']) : array();
+            $force_export = isset($_POST['force_export']) ? (bool)$_POST['force_export'] : false;
+            
+            error_log('WC S3 Export Pro: Parameters - start_date: ' . $start_date . ', end_date: ' . $end_date . ', export_types: ' . print_r($export_types, true));
+            
+            // Debug: Check what export types are configured
+            $export_types_config = $this->settings->get_export_types_config();
+            error_log('WC S3 Export Pro: All configured export types: ' . print_r($export_types_config, true));
+            
+            // If force export is enabled, we need to modify the export history behavior
+            if ($force_export) {
+                // This would require modifying the Automation_Manager to skip duplicate checks
+                // For now, we'll just proceed with the normal export
+            }
+            
+            error_log('WC S3 Export Pro: About to call automation_manager->run_manual_export');
+            $result = $this->automation_manager->run_manual_export($start_date, $end_date, $export_types);
+            error_log('WC S3 Export Pro: automation_manager->run_manual_export returned: ' . print_r($result, true));
+            
+            if ($result !== false) {
+                wp_send_json_success(array(
+                    'message' => sprintf('Manual export completed successfully. %d files created.', $result),
+                    'files_created' => $result
+                ));
+            } else {
+                wp_send_json_error(array('message' => 'Manual export failed. Please check the logs for details.'));
+            }
+        } catch (\Exception $e) {
+            error_log('WC S3 Export Pro: Exception in ajax_run_manual_export: ' . $e->getMessage());
+            error_log('WC S3 Export Pro: Exception trace: ' . $e->getTraceAsString());
+            wp_send_json_error(array('message' => 'Manual export failed with exception: ' . $e->getMessage()));
+        } catch (\Error $e) {
+            error_log('WC S3 Export Pro: Error in ajax_run_manual_export: ' . $e->getMessage());
+            error_log('WC S3 Export Pro: Error trace: ' . $e->getTraceAsString());
+            wp_send_json_error(array('message' => 'Manual export failed with error: ' . $e->getMessage()));
         }
     }
     
