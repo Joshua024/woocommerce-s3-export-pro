@@ -218,6 +218,9 @@ class Export_Manager {
      * AJAX: Run manual export
      */
     public function ajax_run_manual_export() {
+        error_log('WC S3 Export Pro: ajax_run_manual_export called!');
+        error_log('WC S3 Export Pro: POST data: ' . print_r($_POST, true));
+        
         check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
         
         if (!current_user_can('manage_woocommerce')) {
