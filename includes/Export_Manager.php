@@ -418,23 +418,61 @@ class Export_Manager {
     }
     
     /**
-     * AJAX: Save export types configuration
+     * AJAX: Save export types
      */
     public function ajax_save_export_types() {
-        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        error_log('WC S3 Export Pro: ajax_save_export_types called!');
+        error_log('WC S3 Export Pro: POST data: ' . print_r($_POST, true));
         
-        if (!current_user_can('manage_woocommerce')) {
-            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
-        }
-        
+        // Get the raw data
         $export_types = $_POST['export_types'] ?? array();
         
-        $result = $this->settings->update_export_types_config($export_types);
+        error_log('WC S3 Export Pro: Export types to save: ' . print_r($export_types, true));
+        
+        // Sanitize the data before saving
+        $sanitized = array();
+        if (is_array($export_types)) {
+            foreach ($export_types as $index => $type) {
+                if (isset($type['name'])) {
+                    // Generate ID if not present
+                    $id = !empty($type['id']) ? sanitize_text_field($type['id']) : sanitize_title($type['name']) . '_' . time();
+                    
+                    // Sanitize field mappings
+                    $field_mappings = array();
+                    if (isset($type['field_mappings']) && is_array($type['field_mappings'])) {
+                        foreach ($type['field_mappings'] as $field_data) {
+                            if (isset($field_data['enabled']) && $field_data['enabled'] && 
+                                isset($field_data['column_name']) && isset($field_data['data_source'])) {
+                                $field_mappings[sanitize_key($field_data['data_source'])] = sanitize_text_field($field_data['column_name']);
+                            }
+                        }
+                    }
+                    
+                    $sanitized[] = array(
+                        'id' => $id,
+                        'name' => sanitize_text_field($type['name']),
+                        'type' => sanitize_text_field($type['type'] ?? 'orders'),
+                        'enabled' => (bool) ($type['enabled'] ?? false),
+                        'frequency' => sanitize_text_field($type['frequency'] ?? 'daily'),
+                        'time' => sanitize_text_field($type['time'] ?? '01:00'),
+                        's3_folder' => sanitize_text_field($type['s3_folder'] ?? ''),
+                        'local_uploads_folder' => sanitize_text_field($type['local_uploads_folder'] ?? ''),
+                        'file_prefix' => sanitize_text_field($type['file_prefix'] ?? ''),
+                        'description' => sanitize_textarea_field($type['description'] ?? ''),
+                        'field_mappings' => $field_mappings
+                    );
+                }
+            }
+        }
+        
+        error_log('WC S3 Export Pro: Sanitized data: ' . print_r($sanitized, true));
+        
+        // Save to database
+        $result = update_option('wc_s3_export_pro_export_types', $sanitized);
+        
+        error_log('WC S3 Export Pro: Save result: ' . ($result ? 'SUCCESS' : 'FAILED'));
         
         if ($result) {
-            // Set up automation for the new configuration
-            $this->automation_manager->setup_automation();
-            
             wp_send_json_success(array('message' => 'Export types configuration saved successfully'));
         } else {
             wp_send_json_error(array('message' => 'Failed to save export types configuration'));
@@ -442,77 +480,63 @@ class Export_Manager {
     }
     
     /**
-     * AJAX: Save export types configuration (new method)
+     * AJAX: Save export types config
      */
     public function ajax_save_export_types_config() {
-        error_log('WC S3 Export Pro: Save export types config AJAX handler called');
+        error_log('WC S3 Export Pro: ajax_save_export_types_config called!');
+        error_log('WC S3 Export Pro: POST data: ' . print_r($_POST, true));
         
-        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
-        
-        if (!current_user_can('manage_woocommerce')) {
-            error_log('WC S3 Export Pro: Insufficient permissions');
-            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
-        }
-        
+        // Get the raw data
         $export_types = $_POST['export_types'] ?? array();
         
-        // Debug: Log the received data
-        error_log('WC S3 Export Pro: Received export_types data: ' . print_r($export_types, true));
+        error_log('WC S3 Export Pro: Export types to save: ' . print_r($export_types, true));
         
-        // Sanitize the export types data - simplified approach like WooCommerce CSV Export
-        $sanitized_export_types = array();
-        
+        // Sanitize the data before saving
+        $sanitized = array();
         if (is_array($export_types)) {
-            foreach ($export_types as $index => $export_type) {
-                // Generate ID if not present
-                $id = !empty($export_type['id']) ? sanitize_text_field($export_type['id']) : sanitize_title($export_type['name'] ?? 'export_type') . '_' . time();
-                
-                // Process field mappings like WooCommerce CSV Export does
-                $field_mappings = array();
-                if (!empty($export_type['field_mappings']) && is_array($export_type['field_mappings'])) {
-                    foreach ($export_type['field_mappings'] as $field_index => $field_data) {
-                        if (!empty($field_data['data_source'])) {
-                            $field_mappings[] = array(
-                                'enabled' => !empty($field_data['enabled']),
-                                'column_name' => sanitize_text_field($field_data['column_name'] ?? ''),
-                                'data_source' => sanitize_text_field($field_data['data_source'])
-                            );
+            foreach ($export_types as $index => $type) {
+                if (isset($type['name'])) {
+                    // Generate ID if not present
+                    $id = !empty($type['id']) ? sanitize_text_field($type['id']) : sanitize_title($type['name']) . '_' . time();
+                    
+                    // Sanitize field mappings
+                    $field_mappings = array();
+                    if (isset($type['field_mappings']) && is_array($type['field_mappings'])) {
+                        foreach ($type['field_mappings'] as $field_data) {
+                            if (isset($field_data['enabled']) && $field_data['enabled'] && 
+                                isset($field_data['column_name']) && isset($field_data['data_source'])) {
+                                $field_mappings[sanitize_key($field_data['data_source'])] = sanitize_text_field($field_data['column_name']);
+                            }
                         }
                     }
+                    
+                    $sanitized[] = array(
+                        'id' => $id,
+                        'name' => sanitize_text_field($type['name']),
+                        'type' => sanitize_text_field($type['type'] ?? 'orders'),
+                        'enabled' => (bool) ($type['enabled'] ?? false),
+                        'frequency' => sanitize_text_field($type['frequency'] ?? 'daily'),
+                        'time' => sanitize_text_field($type['time'] ?? '01:00'),
+                        's3_folder' => sanitize_text_field($type['s3_folder'] ?? ''),
+                        'local_uploads_folder' => sanitize_text_field($type['local_uploads_folder'] ?? ''),
+                        'file_prefix' => sanitize_text_field($type['file_prefix'] ?? ''),
+                        'description' => sanitize_textarea_field($type['description'] ?? ''),
+                        'field_mappings' => $field_mappings
+                    );
                 }
-                
-                $sanitized_export_types[] = array(
-                    'id' => $id,
-                    'name' => sanitize_text_field($export_type['name'] ?? ''),
-                    'type' => sanitize_text_field($export_type['type'] ?? 'orders'),
-                    'enabled' => (bool) ($export_type['enabled'] ?? false),
-                    'frequency' => sanitize_text_field($export_type['frequency'] ?? 'daily'),
-                    'time' => sanitize_text_field($export_type['time'] ?? '01:00'),
-                    's3_folder' => sanitize_text_field($export_type['s3_folder'] ?? ''),
-                    'local_uploads_folder' => sanitize_text_field($export_type['local_uploads_folder'] ?? ''),
-                    'file_prefix' => sanitize_text_field($export_type['file_prefix'] ?? ''),
-                    'description' => sanitize_textarea_field($export_type['description'] ?? ''),
-                    'field_mappings' => $field_mappings
-                );
             }
         }
         
-        // Debug: Log the sanitized data
-        error_log('WC S3 Export Pro: Sanitized export_types data: ' . print_r($sanitized_export_types, true));
+        error_log('WC S3 Export Pro: Sanitized data: ' . print_r($sanitized, true));
         
-        $result = $this->settings->update_export_types_config($sanitized_export_types);
+        // Save to database
+        $result = update_option('wc_s3_export_pro_export_types', $sanitized);
         
-        // Debug: Log the result
-        error_log('WC S3 Export Pro: Update result: ' . ($result ? 'true' : 'false'));
+        error_log('WC S3 Export Pro: Save result: ' . ($result ? 'SUCCESS' : 'FAILED'));
         
         if ($result) {
-            // Set up automation for the new configuration
-            $this->automation_manager->setup_automation();
-            
-            error_log('WC S3 Export Pro: Save successful, sending success response');
             wp_send_json_success(array('message' => 'Export types configuration saved successfully'));
         } else {
-            error_log('WC S3 Export Pro: Save failed, sending error response');
             wp_send_json_error(array('message' => 'Failed to save export types configuration'));
         }
     }
@@ -629,7 +653,15 @@ class Export_Manager {
     }
 
     /**
-     * AJAX: Simple test handler
+     * AJAX: Minimal test
+     */
+    public function ajax_minimal_test() {
+        error_log('WC S3 Export Pro: Minimal test called');
+        wp_send_json_success(array('message' => 'Minimal test successful!'));
+    }
+    
+    /**
+     * AJAX: Simple test
      */
     public function ajax_simple_test() {
         error_log('WC S3 Export Pro: Simple AJAX handler called');

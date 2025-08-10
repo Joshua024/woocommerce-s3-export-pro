@@ -96,11 +96,12 @@ class Settings {
             array($this, 'sanitize_s3_config')
         );
         
-        register_setting(
-            'wc_s3_export_pro_settings',
-            self::EXPORT_TYPES_OPTION,
-            array($this, 'sanitize_export_types_config')
-        );
+        // Removed sanitization callback to prevent double processing in AJAX handlers
+        // register_setting(
+        //     'wc_s3_export_pro_settings',
+        //     self::EXPORT_TYPES_OPTION,
+        //     array($this, 'sanitize_export_types_config')
+        // );
         
         add_settings_section(
             'wc_s3_export_pro_general',
@@ -268,36 +269,58 @@ class Settings {
      */
     public function update_export_types_config($input) {
         // Debug: Log the config being saved
-        error_log('WC S3 Export Pro: Saving config: ' . print_r($input, true));
+        error_log('WC S3 Export Pro: update_export_types_config called with input: ' . print_r($input, true));
         
-        $sanitized = array();
-        
-        if (is_array($input)) {
-            foreach ($input as $type) {
-                if (isset($type['id']) && isset($type['name'])) {
-                    $sanitized[] = array(
-                        'id' => sanitize_text_field($type['id']),
-                        'name' => sanitize_text_field($type['name']),
-                        'type' => sanitize_text_field($type['type'] ?? 'orders'),
-                        'enabled' => (bool) ($type['enabled'] ?? false),
-                        'frequency' => sanitize_text_field($type['frequency'] ?? 'daily'),
-                        'time' => sanitize_text_field($type['time'] ?? '01:00'),
-                        's3_folder' => sanitize_text_field($type['s3_folder'] ?? ''),
-                        'local_uploads_folder' => sanitize_text_field($type['local_uploads_folder'] ?? ''),
-                        'file_prefix' => sanitize_text_field($type['file_prefix'] ?? ''),
-                        'description' => sanitize_textarea_field($type['description'] ?? ''),
-                        'field_mappings' => $this->sanitize_field_mappings($type['field_mappings'] ?? [], $type['type'] ?? 'orders')
-                    );
+        try {
+            $sanitized = array();
+            
+            if (is_array($input)) {
+                error_log('WC S3 Export Pro: Input is array, processing...');
+                foreach ($input as $index => $type) {
+                    error_log('WC S3 Export Pro: Processing type ' . $index . ': ' . print_r($type, true));
+                    if (isset($type['name'])) {
+                        // Generate ID if not present
+                        $id = !empty($type['id']) ? sanitize_text_field($type['id']) : sanitize_title($type['name']) . '_' . time();
+                        error_log('WC S3 Export Pro: Generated ID: ' . $id);
+                        
+                        error_log('WC S3 Export Pro: Sanitizing field mappings...');
+                        $field_mappings = $this->sanitize_field_mappings($type['field_mappings'] ?? [], $type['type'] ?? 'orders');
+                        error_log('WC S3 Export Pro: Field mappings sanitized: ' . print_r($field_mappings, true));
+                        
+                        $sanitized[] = array(
+                            'id' => $id,
+                            'name' => sanitize_text_field($type['name']),
+                            'type' => sanitize_text_field($type['type'] ?? 'orders'),
+                            'enabled' => (bool) ($type['enabled'] ?? false),
+                            'frequency' => sanitize_text_field($type['frequency'] ?? 'daily'),
+                            'time' => sanitize_text_field($type['time'] ?? '01:00'),
+                            's3_folder' => sanitize_text_field($type['s3_folder'] ?? ''),
+                            'local_uploads_folder' => sanitize_text_field($type['local_uploads_folder'] ?? ''),
+                            'file_prefix' => sanitize_text_field($type['file_prefix'] ?? ''),
+                            'description' => sanitize_textarea_field($type['description'] ?? ''),
+                            'field_mappings' => $field_mappings
+                        );
+                        error_log('WC S3 Export Pro: Type sanitized successfully');
+                    } else {
+                        error_log('WC S3 Export Pro: Type missing name, skipping');
+                    }
                 }
+            } else {
+                error_log('WC S3 Export Pro: Input is not an array: ' . gettype($input));
             }
+            
+            error_log('WC S3 Export Pro: Final sanitized data: ' . print_r($sanitized, true));
+            
+            $result = update_option(self::EXPORT_TYPES_OPTION, $sanitized);
+            
+            // Debug: Log the result
+            error_log('WC S3 Export Pro: update_option result: ' . ($result ? 'true' : 'false'));
+            
+            return $result;
+        } catch (\Exception $e) {
+            error_log('WC S3 Export Pro: Exception in update_export_types_config: ' . $e->getMessage());
+            return false;
         }
-        
-        $result = update_option(self::EXPORT_TYPES_OPTION, $sanitized);
-        
-        // Debug: Log the result
-        error_log('WC S3 Export Pro: update_option result: ' . ($result ? 'true' : 'false'));
-        
-        return $result;
     }
     
     /**
@@ -448,16 +471,21 @@ class Settings {
      * Sanitize field mappings
      */
     public function sanitize_field_mappings($field_mappings, $export_type) {
+        error_log('WC S3 Export Pro: sanitize_field_mappings called with field_mappings: ' . print_r($field_mappings, true) . ' and export_type: ' . $export_type);
+        
         $sanitized = array();
         
-        // If no field mappings provided, use defaults
+        // If no field mappings provided, return empty array
         if (empty($field_mappings)) {
-            return self::DEFAULT_FIELD_MAPPINGS[$export_type] ?? array();
+            error_log('WC S3 Export Pro: No field mappings provided, returning empty array');
+            return array();
         }
         
         // Handle the new table-based field mapping structure from the form
         if (is_array($field_mappings)) {
+            error_log('WC S3 Export Pro: Field mappings is array, processing...');
             foreach ($field_mappings as $field_index => $field_data) {
+                error_log('WC S3 Export Pro: Processing field ' . $field_index . ': ' . print_r($field_data, true));
                 // Check if the field is enabled (checkbox is checked)
                 $enabled = isset($field_data['enabled']) && $field_data['enabled'];
                 
@@ -467,16 +495,13 @@ class Settings {
                     
                     if (!empty($column_name) && !empty($data_source)) {
                         $sanitized[sanitize_key($data_source)] = $column_name;
+                        error_log('WC S3 Export Pro: Added field mapping: ' . sanitize_key($data_source) . ' => ' . $column_name);
                     }
                 }
             }
         }
         
-        // If no valid field mappings found, return defaults
-        if (empty($sanitized)) {
-            return self::DEFAULT_FIELD_MAPPINGS[$export_type] ?? array();
-        }
-        
+        error_log('WC S3 Export Pro: Final sanitized field mappings: ' . print_r($sanitized, true));
         return $sanitized;
     }
     
@@ -608,3 +633,5 @@ class Settings {
         }
     }
 } 
+
+
