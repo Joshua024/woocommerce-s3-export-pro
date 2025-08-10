@@ -69,6 +69,7 @@ class Export_Manager {
         add_action('wp_ajax_wc_s3_get_export_history', array($this, 'ajax_get_export_history'));
         add_action('wp_ajax_wc_s3_delete_export_record', array($this, 'ajax_delete_export_record'));
         add_action('wp_ajax_wc_s3_download_export_file', array($this, 'ajax_download_export_file'));
+        add_action('wp_ajax_wc_s3_test_ajax', array($this, 'ajax_test_ajax'));
         
         // WP-CLI commands
         if (defined('WP_CLI') && WP_CLI) {
@@ -603,6 +604,19 @@ class Export_Manager {
         } else {
             wp_send_json_success(array('content' => 'No log entries found.'));
         }
+    }
+    
+    /**
+     * AJAX: Test AJAX functionality
+     */
+    public function ajax_test_ajax() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        wp_send_json_success(array('message' => 'AJAX test successful!'));
     }
     
     /**
