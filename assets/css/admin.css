@@ -1381,4 +1381,57 @@
     border: 1px solid #fecaca;
     border-radius: 6px;
     margin: 1rem 0;
+}
+
+/* Order Statuses Checkboxes */
+.wc-s3-status-checkboxes {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+    background: #fafafa;
+}
+
+.wc-s3-status-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.wc-s3-status-header .wc-s3-checkbox {
+    margin-bottom: 8px;
+}
+
+.wc-s3-status-header small {
+    color: #666;
+    font-style: italic;
+}
+
+.wc-s3-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.wc-s3-status-grid .wc-s3-checkbox {
+    margin: 0;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.wc-s3-status-grid .wc-s3-checkbox:hover {
+    background: #f8f9fa;
+    border-color: #0073aa;
+}
+
+.wc-s3-status-grid .wc-s3-checkbox input:checked + .checkmark {
+    background-color: #0073aa;
+    border-color: #0073aa;
+}
+
+.wc-s3-status-grid .wc-s3-checkbox input:checked + .checkmark:after {
+    border-color: white;
 } 

@@ -624,21 +624,32 @@ function get_data_source_options($export_type, $selected_value = '') {
                             </div>
                             
                             <div class="wc-s3-form-group order-statuses-field" id="order_statuses_<?php echo $index; ?>_container" style="<?php echo ($export_type['type'] ?? 'orders') === 'orders' ? '' : 'display: none;'; ?>">
-                                <label for="export_type_<?php echo $index; ?>_statuses">Order Statuses</label>
-                                <select id="export_type_<?php echo $index; ?>_statuses" 
-                                        name="export_types[<?php echo $index; ?>][statuses][]" 
-                                        multiple class="wc-enhanced-select" 
-                                        data-placeholder="Select order statuses (leave blank for all statuses)">
-                                    <?php
-                                    $order_statuses = wc_get_order_statuses();
-                                    $selected_statuses = $export_type['statuses'] ?? array();
-                                    foreach ($order_statuses as $status_key => $status_label) {
-                                        $selected = in_array($status_key, $selected_statuses) ? 'selected' : '';
-                                        echo '<option value="' . esc_attr($status_key) . '" ' . $selected . '>' . esc_html($status_label) . '</option>';
-                                    }
-                                    ?>
-                                </select>
-                                <p class="description">Orders with these statuses will be included. Leave blank to include all statuses.</p>
+                                <label>Order Statuses</label>
+                                <div class="wc-s3-status-checkboxes">
+                                    <div class="wc-s3-status-header">
+                                        <label class="wc-s3-checkbox">
+                                            <input type="checkbox" class="wc-s3-select-all-statuses" data-export-index="<?php echo $index; ?>">
+                                            <span class="checkmark"></span>
+                                            <strong>Select All Statuses</strong>
+                                        </label>
+                                        <small>Or select specific statuses below:</small>
+                                    </div>
+                                    <div class="wc-s3-status-grid">
+                                        <?php
+                                        $order_statuses = wc_get_order_statuses();
+                                        $selected_statuses = $export_type['statuses'] ?? array();
+                                        foreach ($order_statuses as $status_key => $status_label) {
+                                            $checked = in_array($status_key, $selected_statuses) ? 'checked' : '';
+                                            echo '<label class="wc-s3-checkbox">';
+                                            echo '<input type="checkbox" name="export_types[' . $index . '][statuses][]" value="' . esc_attr($status_key) . '" ' . $checked . ' class="wc-s3-status-checkbox" data-export-index="' . $index . '">';
+                                            echo '<span class="checkmark"></span>';
+                                            echo esc_html($status_label);
+                                            echo '</label>';
+                                        }
+                                        ?>
+                                    </div>
+                                    <p class="description">Orders with these statuses will be included. Leave all unchecked to include all statuses.</p>
+                                </div>
                             </div>
                         </div>
                         
@@ -1184,6 +1195,58 @@ function addExportType() {
                         <option value="coupons">Coupons</option>
                     </select>
                     <p class="description">The type of data to export</p>
+                </div>
+                
+                <div class="wc-s3-form-group order-statuses-field" id="order_statuses_${newIndex}_container">
+                    <label>Order Statuses</label>
+                    <div class="wc-s3-status-checkboxes">
+                        <div class="wc-s3-status-header">
+                            <label class="wc-s3-checkbox">
+                                <input type="checkbox" class="wc-s3-select-all-statuses" data-export-index="${newIndex}">
+                                <span class="checkmark"></span>
+                                <strong>Select All Statuses</strong>
+                            </label>
+                            <small>Or select specific statuses below:</small>
+                        </div>
+                        <div class="wc-s3-status-grid">
+                            <label class="wc-s3-checkbox">
+                                <input type="checkbox" name="export_types[${newIndex}][statuses][]" value="wc-pending" class="wc-s3-status-checkbox" data-export-index="${newIndex}">
+                                <span class="checkmark"></span>
+                                Pending payment
+                            </label>
+                            <label class="wc-s3-checkbox">
+                                <input type="checkbox" name="export_types[${newIndex}][statuses][]" value="wc-processing" class="wc-s3-status-checkbox" data-export-index="${newIndex}">
+                                <span class="checkmark"></span>
+                                Processing
+                            </label>
+                            <label class="wc-s3-checkbox">
+                                <input type="checkbox" name="export_types[${newIndex}][statuses][]" value="wc-on-hold" class="wc-s3-status-checkbox" data-export-index="${newIndex}">
+                                <span class="checkmark"></span>
+                                On hold
+                            </label>
+                            <label class="wc-s3-checkbox">
+                                <input type="checkbox" name="export_types[${newIndex}][statuses][]" value="wc-completed" class="wc-s3-status-checkbox" data-export-index="${newIndex}">
+                                <span class="checkmark"></span>
+                                Completed
+                            </label>
+                            <label class="wc-s3-checkbox">
+                                <input type="checkbox" name="export_types[${newIndex}][statuses][]" value="wc-cancelled" class="wc-s3-status-checkbox" data-export-index="${newIndex}">
+                                <span class="checkmark"></span>
+                                Cancelled
+                            </label>
+                            <label class="wc-s3-checkbox">
+                                <input type="checkbox" name="export_types[${newIndex}][statuses][]" value="wc-refunded" class="wc-s3-status-checkbox" data-export-index="${newIndex}">
+                                <span class="checkmark"></span>
+                                Refunded
+                            </label>
+                            <label class="wc-s3-checkbox">
+                                <input type="checkbox" name="export_types[${newIndex}][statuses][]" value="wc-failed" class="wc-s3-status-checkbox" data-export-index="${newIndex}">
+                                <span class="checkmark"></span>
+                                Failed
+                            </label>
+                        </div>
+                        <p class="description">Orders with these statuses will be included. Leave all unchecked to include all statuses.</p>
+                    </div>
                 </div>
             </div>
             
@@ -1823,6 +1886,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 orderStatusesContainer.style.display = 'block';
             } else {
                 orderStatusesContainer.style.display = 'none';
+            }
+        }
+    });
+    
+    // Handle "Select All" checkbox for order statuses
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('.wc-s3-select-all-statuses')) {
+            const exportIndex = e.target.getAttribute('data-export-index');
+            const statusCheckboxes = document.querySelectorAll(`.wc-s3-status-checkbox[data-export-index="${exportIndex}"]`);
+            
+            statusCheckboxes.forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+            });
+        }
+    });
+    
+    // Handle individual status checkboxes to update "Select All"
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('.wc-s3-status-checkbox')) {
+            const exportIndex = e.target.getAttribute('data-export-index');
+            const selectAllCheckbox = document.querySelector(`.wc-s3-select-all-statuses[data-export-index="${exportIndex}"]`);
+            const statusCheckboxes = document.querySelectorAll(`.wc-s3-status-checkbox[data-export-index="${exportIndex}"]`);
+            const checkedCheckboxes = document.querySelectorAll(`.wc-s3-status-checkbox[data-export-index="${exportIndex}"]:checked`);
+            
+            // Update "Select All" checkbox state
+            if (checkedCheckboxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedCheckboxes.length === statusCheckboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
             }
         }
     });
