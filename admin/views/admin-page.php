@@ -465,7 +465,7 @@ function get_data_source_options($export_type, $selected_value = '') {
                         </select>
                     </div>
                     
-                    <div style="display:flex; gap:8px; align-items:flex-end;">
+                    <div class="wc-s3-history-filter-actions">
                         <button type="button" class="wc-s3-btn primary small" onclick="loadExportHistory()">🔍 Filter</button>
                         <button type="button" id="delete-selected-btn" class="wc-s3-btn error small" onclick="deleteSelectedExportRecords()" disabled>🗑️ Delete Selected</button>
                     </div>
@@ -606,7 +606,7 @@ function get_data_source_options($export_type, $selected_value = '') {
                         </div>
                         
                         <div class="wc-s3-form-row">
-                            <div class="wc-s3-form-group">
+            <div class="wc-s3-form-group">
                                 <label for="export_type_<?php echo $index; ?>_name">Export Name</label>
                                 <input type="text" id="export_type_<?php echo $index; ?>_name" 
                                        name="export_types[<?php echo $index; ?>][name]" 
@@ -637,7 +637,7 @@ function get_data_source_options($export_type, $selected_value = '') {
                                             <input type="checkbox" class="wc-s3-select-all-statuses" data-export-index="<?php echo $index; ?>">
                                             <span class="checkmark"></span>
                                             <strong>Select All Statuses</strong>
-                                        </label>
+                    </label>
                                         <small>Or select specific statuses below:</small>
                                     </div>
                                     <div class="wc-s3-status-grid">
@@ -715,8 +715,8 @@ function get_data_source_options($export_type, $selected_value = '') {
                                     Enable this export
                     </label>
                 </div>
-                        </div>
-                        
+            </div>
+            
                         <div class="wc-s3-form-group">
                             <label for="export_type_<?php echo $index; ?>_description">Description</label>
                             <textarea id="export_type_<?php echo $index; ?>_description" 

@@ -809,6 +809,20 @@
     align-items: end;
 }
 
+.wc-s3-history-filter-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+    align-items: flex-end;
+    margin-top: 1.75rem;
+}
+
+@media (max-width: 768px) {
+    .wc-s3-history-filter-actions {
+        margin-top: 0; /* compact on mobile where actions stack */
+    }
+}
+
 /* Drag and Drop Styles */
 .wc-s3-field-row.dragging {
     opacity: 0.5;
