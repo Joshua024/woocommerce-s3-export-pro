@@ -355,16 +355,23 @@ class Automation_Manager {
         
         $this->log("[$timestamp] Creating export for type: {$export_type['name']}", $log_file);
         
-        // Use the new CSV Generator for data extraction and CSV creation
-        $file_data = $this->csv_generator->generate_csv($export_type, $date_param);
-        
-        if ($file_data) {
-            $this->log("[$timestamp] CSV file generated successfully for: {$export_type['name']}", $log_file);
-        } else {
-            $this->log("[$timestamp] Failed to generate CSV file for: {$export_type['name']}", $log_file);
+        try {
+            // Use the new CSV Generator for data extraction and CSV creation
+            $this->log("[$timestamp] About to call CSV generator", $log_file);
+            $file_data = $this->csv_generator->generate_csv($export_type, $date_param);
+            $this->log("[$timestamp] CSV generator returned: " . ($file_data ? 'SUCCESS' : 'FAILED'), $log_file);
+            
+            if ($file_data) {
+                $this->log("[$timestamp] CSV file generated successfully for: {$export_type['name']}", $log_file);
+            } else {
+                $this->log("[$timestamp] Failed to generate CSV file for: {$export_type['name']}", $log_file);
+            }
+            
+            return $file_data;
+        } catch (\Exception $e) {
+            $this->log("[$timestamp] Exception in CSV generation: " . $e->getMessage(), $log_file);
+            return false;
         }
-        
-        return $file_data;
     }
     
     /**

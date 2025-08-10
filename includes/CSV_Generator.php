@@ -18,6 +18,9 @@ class CSV_Generator {
      */
     public function __construct() {
         $this->settings = new Settings();
+        $log_file = $this->get_log_file();
+        $timestamp = date('Y-m-d H:i:s');
+        $this->log("[$timestamp] CSV Generator instantiated successfully", $log_file);
     }
     
     /**
@@ -32,6 +35,8 @@ class CSV_Generator {
         // Get field mappings
         $field_mappings = $export_type['field_mappings'] ?? [];
         
+        $this->log("[$timestamp] Field mappings count: " . count($field_mappings), $log_file);
+        
         if (empty($field_mappings)) {
             $this->log("[$timestamp] No field mappings found for export type: {$export_type['name']}", $log_file);
             return false;
@@ -39,6 +44,8 @@ class CSV_Generator {
         
         // Extract data based on export type
         $data = $this->extract_data($export_type['type'], $date_param);
+        
+        $this->log("[$timestamp] Data extracted count: " . count($data), $log_file);
         
         if (empty($data)) {
             $this->log("[$timestamp] No data found for export type: {$export_type['name']}", $log_file);
@@ -79,6 +86,9 @@ class CSV_Generator {
      * Extract orders data
      */
     private function extract_orders_data($date_param = null) {
+        $log_file = $this->get_log_file();
+        $timestamp = date('Y-m-d H:i:s');
+        
         $args = array(
             'limit' => -1,
             'status' => array('wc-completed', 'wc-processing', 'wc-on-hold'),
@@ -89,7 +99,12 @@ class CSV_Generator {
             $args['date_created'] = $date_param;
         }
         
+        $this->log("[$timestamp] Extracting orders with args: " . print_r($args, true), $log_file);
+        
         $orders = wc_get_orders($args);
+        
+        $this->log("[$timestamp] Found " . count($orders) . " orders", $log_file);
+        
         $data = array();
         
         foreach ($orders as $order) {
@@ -395,14 +410,31 @@ class CSV_Generator {
             return false;
         }
         
+        // Convert field mappings from indexed array format to associative array format
+        $converted_field_mappings = array();
+        $headers = array();
+        
+        foreach ($field_mappings as $field_mapping) {
+            if (isset($field_mapping['enabled']) && $field_mapping['enabled'] && 
+                isset($field_mapping['data_source']) && isset($field_mapping['column_name'])) {
+                $converted_field_mappings[$field_mapping['data_source']] = $field_mapping['column_name'];
+                $headers[] = $field_mapping['column_name'];
+            }
+        }
+        
+        if (empty($converted_field_mappings)) {
+            $this->log("[$timestamp] No valid field mappings found for CSV generation", $log_file);
+            fclose($file_handle);
+            return false;
+        }
+        
         // Write headers
-        $headers = array_values($field_mappings);
         fputcsv($file_handle, $headers);
         
         // Write data rows
         foreach ($data as $row) {
             $csv_row = array();
-            foreach (array_keys($field_mappings) as $field_key) {
+            foreach (array_keys($converted_field_mappings) as $field_key) {
                 $csv_row[] = $row[$field_key] ?? '';
             }
             fputcsv($file_handle, $csv_row);
