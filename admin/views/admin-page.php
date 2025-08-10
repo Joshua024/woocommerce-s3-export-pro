@@ -622,7 +622,9 @@ function get_data_source_options($export_type, $selected_value = '') {
                                 </select>
                                 <p class="description">The type of data to export</p>
                             </div>
-                            
+                        </div>
+                        
+                        <div class="wc-s3-form-row">
                             <div class="wc-s3-form-group order-statuses-field" id="order_statuses_<?php echo $index; ?>_container" style="<?php echo ($export_type['type'] ?? 'orders') === 'orders' ? '' : 'display: none;'; ?>">
                                 <label>Order Statuses</label>
                                 <div class="wc-s3-status-checkboxes">
@@ -1196,7 +1198,9 @@ function addExportType() {
                     </select>
                     <p class="description">The type of data to export</p>
                 </div>
-                
+            </div>
+            
+            <div class="wc-s3-form-row">
                 <div class="wc-s3-form-group order-statuses-field" id="order_statuses_${newIndex}_container">
                     <label>Order Statuses</label>
                     <div class="wc-s3-status-checkboxes">

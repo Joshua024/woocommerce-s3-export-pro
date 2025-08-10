@@ -1391,6 +1391,12 @@
     background: #fafafa;
 }
 
+/* Make order statuses field take full width when on its own row */
+.wc-s3-form-row .wc-s3-form-group.order-statuses-field {
+    width: 100%;
+    flex: 1;
+}
+
 .wc-s3-status-header {
     margin-bottom: 16px;
     padding-bottom: 12px;
