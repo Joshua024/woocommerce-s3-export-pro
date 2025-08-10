@@ -392,13 +392,17 @@ function get_data_source_options($export_type, $selected_value = '') {
                             <?php
                             $export_types_config = $settings->get_export_types_config();
                             foreach ($export_types_config as $export_type) {
-                                if ($export_type['enabled']) {
-                                    echo '<label class="wc-s3-checkbox">';
-                                    echo '<input type="checkbox" name="export_types[]" value="' . esc_attr($export_type['id']) . '" checked>';
-                                    echo '<span class="checkmark"></span>';
-                                    echo esc_html($export_type['name']);
-                                    echo '</label>';
+                                // Show all export types in manual export, not just enabled ones
+                                $checked = $export_type['enabled'] ? 'checked' : '';
+                                $disabled_class = !$export_type['enabled'] ? 'disabled' : '';
+                                echo '<label class="wc-s3-checkbox ' . $disabled_class . '">';
+                                echo '<input type="checkbox" name="export_types[]" value="' . esc_attr($export_type['id']) . '" ' . $checked . '>';
+                                echo '<span class="checkmark"></span>';
+                                echo esc_html($export_type['name']);
+                                if (!$export_type['enabled']) {
+                                    echo ' <span class="wc-s3-disabled-note">(Disabled)</span>';
                                 }
+                                echo '</label>';
                             }
                             ?>
                         </div>
