@@ -70,6 +70,7 @@ class Export_Manager {
         add_action('wp_ajax_wc_s3_delete_export_record', array($this, 'ajax_delete_export_record'));
         add_action('wp_ajax_wc_s3_download_export_file', array($this, 'ajax_download_export_file'));
         add_action('wp_ajax_wc_s3_test_ajax', array($this, 'ajax_test_ajax'));
+        add_action('wp_ajax_wc_s3_simple_test', array($this, 'ajax_simple_test'));
         
         // WP-CLI commands
         if (defined('WP_CLI') && WP_CLI) {
@@ -444,9 +445,12 @@ class Export_Manager {
      * AJAX: Save export types configuration (new method)
      */
     public function ajax_save_export_types_config() {
+        error_log('WC S3 Export Pro: Save export types config AJAX handler called');
+        
         check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
         
         if (!current_user_can('manage_woocommerce')) {
+            error_log('WC S3 Export Pro: Insufficient permissions');
             wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
         }
         
@@ -505,8 +509,10 @@ class Export_Manager {
             // Set up automation for the new configuration
             $this->automation_manager->setup_automation();
             
+            error_log('WC S3 Export Pro: Save successful, sending success response');
             wp_send_json_success(array('message' => 'Export types configuration saved successfully'));
         } else {
+            error_log('WC S3 Export Pro: Save failed, sending error response');
             wp_send_json_error(array('message' => 'Failed to save export types configuration'));
         }
     }
@@ -610,13 +616,24 @@ class Export_Manager {
      * AJAX: Test AJAX functionality
      */
     public function ajax_test_ajax() {
+        error_log('WC S3 Export Pro: Test AJAX handler called');
+        
         check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
         
         if (!current_user_can('manage_woocommerce')) {
             wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
         }
         
+        error_log('WC S3 Export Pro: Test AJAX handler completed successfully');
         wp_send_json_success(array('message' => 'AJAX test successful!'));
+    }
+
+    /**
+     * AJAX: Simple test handler
+     */
+    public function ajax_simple_test() {
+        error_log('WC S3 Export Pro: Simple AJAX handler called');
+        wp_send_json_success(array('message' => 'Simple AJAX test successful!'));
     }
     
     /**
