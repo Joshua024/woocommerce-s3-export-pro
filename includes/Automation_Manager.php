@@ -899,22 +899,22 @@ class Automation_Manager {
         $now = new \DateTime('now', $tz);
         switch ($frequency) {
             case 'hourly':
-                wp_schedule_event(time(), 'hourly', 'wc_s3_export_' . $type_id);
+                wp_schedule_event(time(), 'hourly', 'wc_s3_export_' . $type_id, array($type_id));
                 break;
             case 'daily':
                 $dt = new \DateTime('today ' . $time, $tz);
                 if ($dt->getTimestamp() <= $now->getTimestamp()) {
                     $dt = new \DateTime('tomorrow ' . $time, $tz);
                 }
-                wp_schedule_event($dt->getTimestamp(), 'daily', 'wc_s3_export_' . $type_id);
+                wp_schedule_event($dt->getTimestamp(), 'daily', 'wc_s3_export_' . $type_id, array($type_id));
                 break;
             case 'weekly':
                 $dt = new \DateTime('next monday ' . $time, $tz);
-                wp_schedule_event($dt->getTimestamp(), 'weekly', 'wc_s3_export_' . $type_id);
+                wp_schedule_event($dt->getTimestamp(), 'weekly', 'wc_s3_export_' . $type_id, array($type_id));
                 break;
             case 'monthly':
                 $dt = new \DateTime('first day of next month ' . $time, $tz);
-                wp_schedule_event($dt->getTimestamp(), 'monthly', 'wc_s3_export_' . $type_id);
+                wp_schedule_event($dt->getTimestamp(), 'monthly', 'wc_s3_export_' . $type_id, array($type_id));
                 break;
         }
         
