@@ -227,6 +227,25 @@ class Settings {
             );
         }
         
+        // Convert field mappings format for form display
+        foreach ($config as &$export_type) {
+            if (isset($export_type['field_mappings']) && is_array($export_type['field_mappings'])) {
+                $converted_mappings = array();
+                $field_index = 0;
+                
+                foreach ($export_type['field_mappings'] as $data_source => $column_name) {
+                    $converted_mappings[] = array(
+                        'enabled' => true,
+                        'column_name' => $column_name,
+                        'data_source' => $data_source
+                    );
+                    $field_index++;
+                }
+                
+                $export_type['field_mappings'] = $converted_mappings;
+            }
+        }
+        
         return $config;
     }
     
@@ -247,11 +266,33 @@ class Settings {
     /**
      * Update export types config
      */
-    public function update_export_types_config($config) {
+    public function update_export_types_config($input) {
         // Debug: Log the config being saved
-        error_log('WC S3 Export Pro: Saving config: ' . print_r($config, true));
+        error_log('WC S3 Export Pro: Saving config: ' . print_r($input, true));
         
-        $result = update_option(self::EXPORT_TYPES_OPTION, $config);
+        $sanitized = array();
+        
+        if (is_array($input)) {
+            foreach ($input as $type) {
+                if (isset($type['id']) && isset($type['name'])) {
+                    $sanitized[] = array(
+                        'id' => sanitize_text_field($type['id']),
+                        'name' => sanitize_text_field($type['name']),
+                        'type' => sanitize_text_field($type['type'] ?? 'orders'),
+                        'enabled' => (bool) ($type['enabled'] ?? false),
+                        'frequency' => sanitize_text_field($type['frequency'] ?? 'daily'),
+                        'time' => sanitize_text_field($type['time'] ?? '01:00'),
+                        's3_folder' => sanitize_text_field($type['s3_folder'] ?? ''),
+                        'local_uploads_folder' => sanitize_text_field($type['local_uploads_folder'] ?? ''),
+                        'file_prefix' => sanitize_text_field($type['file_prefix'] ?? ''),
+                        'description' => sanitize_textarea_field($type['description'] ?? ''),
+                        'field_mappings' => $this->sanitize_field_mappings($type['field_mappings'] ?? [], $type['type'] ?? 'orders')
+                    );
+                }
+            }
+        }
+        
+        $result = update_option(self::EXPORT_TYPES_OPTION, $sanitized);
         
         // Debug: Log the result
         error_log('WC S3 Export Pro: update_option result: ' . ($result ? 'true' : 'false'));

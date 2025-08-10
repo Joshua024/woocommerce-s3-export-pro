@@ -611,10 +611,10 @@ function get_data_source_options($export_type, $selected_value = '') {
                                 <label for="export_type_<?php echo $index; ?>_type">Export Type</label>
                                 <select id="export_type_<?php echo $index; ?>_type" 
                                         name="export_types[<?php echo $index; ?>][type]">
-                                    <option value="orders">Orders</option>
-                                    <option value="customers">Customers</option>
-                                    <option value="products">Products</option>
-                                    <option value="coupons">Coupons</option>
+                                    <option value="orders" <?php selected($export_type['type'] ?? 'orders', 'orders'); ?>>Orders</option>
+                                    <option value="customers" <?php selected($export_type['type'] ?? 'orders', 'customers'); ?>>Customers</option>
+                                    <option value="products" <?php selected($export_type['type'] ?? 'orders', 'products'); ?>>Products</option>
+                                    <option value="coupons" <?php selected($export_type['type'] ?? 'orders', 'coupons'); ?>>Coupons</option>
                                 </select>
                                 <p class="description">The type of data to export</p>
                             </div>
