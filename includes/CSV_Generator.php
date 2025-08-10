@@ -43,6 +43,7 @@ class CSV_Generator {
         }
         
         // Extract data based on export type
+        $this->log("[$timestamp] About to extract data for type: {$export_type['type']}", $log_file);
         $data = $this->extract_data($export_type['type'], $date_param, $export_type);
         
         $this->log("[$timestamp] Data extracted count: " . count($data), $log_file);
@@ -73,17 +74,31 @@ class CSV_Generator {
      * Extract data from WooCommerce based on export type
      */
     private function extract_data($export_type, $date_param = null, $export_type_config = null) {
-        switch ($export_type) {
-            case 'orders':
-                return $this->extract_orders_data($date_param, $export_type_config);
-            case 'customers':
-                return $this->extract_customers_data($date_param);
-            case 'products':
-                return $this->extract_products_data($date_param);
-            case 'coupons':
-                return $this->extract_coupons_data($date_param);
-            default:
-                return array();
+        $log_file = $this->get_log_file();
+        $timestamp = date('Y-m-d H:i:s');
+        
+        $this->log("[$timestamp] extract_data called with type: $export_type", $log_file);
+        
+        try {
+            switch ($export_type) {
+                case 'orders':
+                    $this->log("[$timestamp] Calling extract_orders_data", $log_file);
+                    $result = $this->extract_orders_data($date_param, $export_type_config);
+                    $this->log("[$timestamp] extract_orders_data returned " . count($result) . " records", $log_file);
+                    return $result;
+                case 'customers':
+                    return $this->extract_customers_data($date_param);
+                case 'products':
+                    return $this->extract_products_data($date_param);
+                case 'coupons':
+                    return $this->extract_coupons_data($date_param);
+                default:
+                    $this->log("[$timestamp] Unknown export type: $export_type", $log_file);
+                    return array();
+            }
+        } catch (\Exception $e) {
+            $this->log("[$timestamp] Exception in extract_data: " . $e->getMessage(), $log_file);
+            return array();
         }
     }
     
