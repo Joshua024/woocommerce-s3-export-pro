@@ -53,6 +53,8 @@ class CSV_Generator {
             return false;
         }
         
+        $this->log("[$timestamp] About to create CSV file with " . count($data) . " records", $log_file);
+        
         // Generate CSV file
         try {
             $file_data = $this->create_csv_file($data, $field_mappings, $export_type, $date_param);
@@ -396,12 +398,15 @@ class CSV_Generator {
      * Create CSV file from data
      */
     private function create_csv_file($data, $field_mappings, $export_type, $date_param = null) {
-        if (empty($data)) {
-            return false;
-        }
-        
         $log_file = $this->get_log_file();
         $timestamp = date('Y-m-d H:i:s');
+        
+        $this->log("[$timestamp] create_csv_file called with " . count($data) . " records", $log_file);
+        
+        if (empty($data)) {
+            $this->log("[$timestamp] No data provided to create_csv_file", $log_file);
+            return false;
+        }
         
         // Generate filename with date if provided
         if ($date_param) {
@@ -428,8 +433,13 @@ class CSV_Generator {
         $local_folder = $export_type['local_uploads_folder'] ?: sanitize_title($export_type['name']);
         $folder_path = $upload_dir['basedir'] . '/wc-s3-exports/' . $local_folder;
         
+        $this->log("[$timestamp] Creating folder: $folder_path", $log_file);
+        
         if (!file_exists($folder_path)) {
+            $this->log("[$timestamp] Folder doesn't exist, creating it", $log_file);
             wp_mkdir_p($folder_path);
+        } else {
+            $this->log("[$timestamp] Folder already exists", $log_file);
         }
         
         $file_path = $folder_path . '/' . $filename;
