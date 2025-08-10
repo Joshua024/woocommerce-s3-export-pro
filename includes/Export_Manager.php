@@ -454,13 +454,27 @@ class Export_Manager {
         // Debug: Log the received data
         error_log('WC S3 Export Pro: Received export_types data: ' . print_r($export_types, true));
         
-        // Sanitize the export types data
+        // Sanitize the export types data - simplified approach like WooCommerce CSV Export
         $sanitized_export_types = array();
         
         if (is_array($export_types)) {
             foreach ($export_types as $index => $export_type) {
                 // Generate ID if not present
                 $id = !empty($export_type['id']) ? sanitize_text_field($export_type['id']) : sanitize_title($export_type['name'] ?? 'export_type') . '_' . time();
+                
+                // Process field mappings like WooCommerce CSV Export does
+                $field_mappings = array();
+                if (!empty($export_type['field_mappings']) && is_array($export_type['field_mappings'])) {
+                    foreach ($export_type['field_mappings'] as $field_index => $field_data) {
+                        if (!empty($field_data['data_source'])) {
+                            $field_mappings[] = array(
+                                'enabled' => !empty($field_data['enabled']),
+                                'column_name' => sanitize_text_field($field_data['column_name'] ?? ''),
+                                'data_source' => sanitize_text_field($field_data['data_source'])
+                            );
+                        }
+                    }
+                }
                 
                 $sanitized_export_types[] = array(
                     'id' => $id,
@@ -473,7 +487,7 @@ class Export_Manager {
                     'local_uploads_folder' => sanitize_text_field($export_type['local_uploads_folder'] ?? ''),
                     'file_prefix' => sanitize_text_field($export_type['file_prefix'] ?? ''),
                     'description' => sanitize_textarea_field($export_type['description'] ?? ''),
-                    'field_mappings' => $this->settings->sanitize_field_mappings($export_type['field_mappings'] ?? [], $export_type['type'] ?? 'orders')
+                    'field_mappings' => $field_mappings
                 );
             }
         }
