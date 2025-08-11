@@ -5,7 +5,7 @@
  * Description: Professional WooCommerce CSV export automation with S3 upload capabilities. Perfect for businesses needing automated data exports to Amazon S3 with zero technical knowledge required.
  * Version: 2.0.0
  * Author: Joshua C. Adumchimma
- * Author URI: https://github.com/Joshua024
+ * Author URI: https://dev-joshua-web-developer.pantheonsite.io/
  * Text Domain: wc-s3-export-pro
  * Domain Path: /languages
  * Requires at least: 6.0
