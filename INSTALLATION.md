@@ -106,9 +106,9 @@ wp wc-s3 setup_s3_config YOUR_ACCESS_KEY YOUR_SECRET_KEY
 ## 👨‍💻 Author Information
 
 **Joshua C. Adumchimma**
-- Professional WordPress developer
-- Specializing in WooCommerce automation
-- GitHub: [@joshuaadumchimma](https://github.com/joshuaadumchimma)
+- Professional WordPress developer specializing in WooCommerce automation
+- Portfolio: [dev-joshua-web-developer.pantheonsite.io](https://dev-joshua-web-developer.pantheonsite.io/)
+- GitHub: [@Joshua024](https://github.com/Joshua024)
 
 ## 🎯 Perfect For
 
@@ -141,7 +141,7 @@ Ready to automate your WooCommerce exports?
 If you continue to have issues:
 1. Check the main README.md for detailed documentation
 2. Review WordPress error logs
-3. Ensure all prerequisites are met (WordPress 5.0+, WooCommerce 5.0+, PHP 7.4+)
+3. Ensure all prerequisites are met (WordPress 6.0+, WooCommerce 8.0+, PHP 8.0+)
 4. Contact the author for professional support
 
 ---

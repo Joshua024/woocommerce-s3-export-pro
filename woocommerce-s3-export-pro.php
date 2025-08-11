@@ -1,17 +1,17 @@
 <?php
 /**
  * Plugin Name: WooCommerce S3 Export Pro
- * Plugin URI: https://github.com/joshuaadumchimma/woocommerce-s3-export-pro
+ * Plugin URI: https://github.com/Joshua024/woocommerce-s3-export-pro
  * Description: Professional WooCommerce CSV export automation with S3 upload capabilities. Perfect for businesses needing automated data exports to Amazon S3 with zero technical knowledge required.
- * Version: 1.0.0
+ * Version: 2.0.0
  * Author: Joshua C. Adumchimma
- * Author URI: https://github.com/joshuaadumchimma
+ * Author URI: https://github.com/Joshua024
  * Text Domain: wc-s3-export-pro
  * Domain Path: /languages
- * Requires at least: 5.0
+ * Requires at least: 6.0
  * Tested up to: 6.8
- * Requires PHP: 7.4
- * WC requires at least: 5.0
+ * Requires PHP: 8.0
+ * WC requires at least: 7.0
  * WC tested up to: 10.0
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -26,7 +26,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('WC_S3_EXPORT_PRO_VERSION', '1.0.0');
+define('WC_S3_EXPORT_PRO_VERSION', '2.0.0');
 define('WC_S3_EXPORT_PRO_PLUGIN_FILE', __FILE__);
 define('WC_S3_EXPORT_PRO_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WC_S3_EXPORT_PRO_PLUGIN_URL', plugin_dir_url(__FILE__));

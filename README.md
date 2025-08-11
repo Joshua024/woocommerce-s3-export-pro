@@ -108,10 +108,9 @@
 ## 🛠️ Installation
 
 ### Prerequisites
-- WordPress 5.0+
-- WooCommerce 5.0+
-- WooCommerce Customer/Order CSV Export plugin
-- PHP 7.4+
+- WordPress 6.0+
+- WooCommerce 8.0+
+- PHP 8.0+
 - Composer (for dependency management)
 
 ### Quick Installation
@@ -268,9 +267,9 @@ This plugin is licensed under the GPL v2 or later.
 ## 👨‍💻 Author
 
 **Joshua C. Adumchimma**
-- GitHub: [@joshuaadumchimma](https://github.com/joshuaadumchimma)
-- Professional WordPress developer
-- Specializing in WooCommerce automation
+- GitHub: [@Joshua024](https://github.com/Joshua024)
+- Portfolio: [dev-joshua-web-developer.pantheonsite.io](https://dev-joshua-web-developer.pantheonsite.io/)
+- Professional WordPress developer specializing in WooCommerce automation
 
 ## 🚀 Get Started Today
 
