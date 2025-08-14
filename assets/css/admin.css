@@ -119,31 +119,109 @@
 /* Status Issues */
 .wc-s3-status-card .status-issues {
     margin-top: 1rem;
-    padding: 1rem;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 6px;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+    border: 1px solid #fca5a5;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.wc-s3-status-card .status-issues::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #ef4444, #dc2626);
 }
 
 .wc-s3-status-card .status-issues strong {
     color: #991b1b;
-    display: block;
-    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.wc-s3-status-card .status-issues strong::before {
+    content: '⚠️';
+    margin-right: 0.5rem;
+    font-size: 1rem;
 }
 
 .wc-s3-status-card .status-issues ul {
     margin: 0;
-    padding-left: 1.5rem;
+    padding-left: 0;
+    list-style: none;
 }
 
 .wc-s3-status-card .status-issues li {
     color: #7f1d1d;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.5rem;
     font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 6px;
+    border-left: 3px solid #ef4444;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.wc-s3-status-card .status-issues li:hover {
+    background: rgba(255, 255, 255, 0.8);
+    transform: translateX(2px);
 }
 
 .wc-s3-status-card .status-issues li:last-child {
     margin-bottom: 0;
+}
+
+/* Individual Status Items */
+.wc-s3-status-card p {
+    margin: 0.5rem 0;
+    padding: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #374151;
+    transition: all 0.2s ease;
+}
+
+.wc-s3-status-card p strong {
+    margin-right: 0.5rem;
+    font-weight: 600;
+    color: #1f2937;
+    min-width: 120px;
+}
+
+/* Status Item States */
+.wc-s3-status-card p.status-active {
+    color: #065f46;
+    background: rgba(16, 185, 129, 0.05);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border-left: 3px solid #10b981;
+}
+
+.wc-s3-status-card p.status-inactive {
+    color: #991b1b;
+    background: rgba(239, 68, 68, 0.05);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border-left: 3px solid #ef4444;
+}
+
+.wc-s3-status-card p.status-warning {
+    color: #92400e;
+    background: rgba(245, 158, 11, 0.05);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border-left: 3px solid #f59e0b;
 }
 
 /* Action Buttons */
