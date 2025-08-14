@@ -70,19 +70,8 @@ function wc_s3_export_pro_csv_export_missing_notice() {
 
 // Initialize the plugin
 function wc_s3_export_pro_init() {
-    // Check if WooCommerce is active
-    if (!class_exists('WooCommerce')) {
-        add_action('admin_notices', 'wc_s3_export_pro_woocommerce_missing_notice');
-        return;
-    }
-
-    // Check if WooCommerce CSV Export plugin is active
-    if (!function_exists('wc_customer_order_csv_export')) {
-        add_action('admin_notices', 'wc_s3_export_pro_csv_export_missing_notice');
-        return;
-    }
-
-    // Initialize the main plugin class
+    // Initialize the main plugin class regardless of WooCommerce dependencies
+    // The plugin will work independently and handle missing dependencies gracefully
     new \WC_S3_Export_Pro\Export_Manager();
 }
 add_action('plugins_loaded', 'wc_s3_export_pro_init');

@@ -47,32 +47,25 @@ class Automation_Manager {
         
         $this->log("[$timestamp] Starting export process with enhanced monitoring", $log_file);
         
-        // FAILSAFE 1: Check if WooCommerce CSV Export plugin is functional
+        // Check if WooCommerce CSV Export plugin is available, but don't fail if it's not
         if (!function_exists('wc_customer_order_csv_export') || !class_exists('WC_Customer_Order_CSV_Export')) {
-            $this->log("[$timestamp] CRITICAL: WooCommerce CSV Export plugin not loaded - scheduling retry", $log_file);
-            $this->schedule_export_retry('Plugin not loaded');
-            return;
-        }
-        
-        // FAILSAFE 2: Check plugin export handler
-        try {
-            $export_handler = wc_customer_order_csv_export()->get_export_handler_instance();
-            if (!$export_handler) {
-                $this->log("[$timestamp] CRITICAL: Export handler not available - scheduling retry", $log_file);
-                $this->schedule_export_retry('Export handler unavailable');
-                return;
+            $this->log("[$timestamp] WARNING: WooCommerce CSV Export plugin not loaded - using standalone mode", $log_file);
+            // Continue with standalone export functionality
+        } else {
+            // FAILSAFE 2: Check plugin export handler
+            try {
+                $export_handler = wc_customer_order_csv_export()->get_export_handler_instance();
+                if (!$export_handler) {
+                    $this->log("[$timestamp] WARNING: Export handler not available - using standalone mode", $log_file);
+                } else {
+                    $exports = $export_handler->get_exports();
+                    if (empty($exports) || count($exports) < 2) {
+                        $this->log("[$timestamp] WARNING: Export configurations missing - using standalone mode", $log_file);
+                    }
+                }
+            } catch (\Exception $e) {
+                $this->log("[$timestamp] WARNING: Export system error - " . $e->getMessage() . " - using standalone mode", $log_file);
             }
-            
-            $exports = $export_handler->get_exports();
-            if (empty($exports) || count($exports) < 2) {
-                $this->log("[$timestamp] CRITICAL: Export configurations missing - attempting recovery", $log_file);
-                $this->attempt_export_config_recovery();
-                return;
-            }
-        } catch (\Exception $e) {
-            $this->log("[$timestamp] CRITICAL: Export system error - " . $e->getMessage(), $log_file);
-            $this->schedule_export_retry('Export system exception: ' . $e->getMessage());
-            return;
         }
         
         // FAILSAFE 3: Memory and time limits
@@ -86,6 +79,12 @@ class Automation_Manager {
         $export_types_config = $this->settings->get_export_types_config();
         $s3_config = $this->settings->get_s3_config();
         
+        // If no export types configured, create default ones
+        if (empty($export_types_config)) {
+            $this->log("[$timestamp] No export types configured - creating default configuration", $log_file);
+            $export_types_config = $this->create_default_export_types();
+        }
+        
         // Process each configured export type
         foreach ($export_types_config as $export_type) {
             if (!$export_type['enabled']) {
@@ -94,10 +93,21 @@ class Automation_Manager {
             }
             
             try {
-                $file_data = $this->create_csv_export_file_for_type($export_type, $date_param);
+                // Try WooCommerce export first, fall back to standalone
+                $file_data = null;
+                if (function_exists('wc_customer_order_csv_export')) {
+                    $file_data = $this->create_csv_export_file_for_type($export_type, $date_param);
+                }
+                
+                // If WooCommerce export failed or not available, use standalone
+                if (empty($file_data)) {
+                    $this->log("[$timestamp] Using standalone export for '{$export_type['name']}'", $log_file);
+                    $file_data = $this->create_standalone_csv_export($export_type, $date_param);
+                }
+                
                 if (!empty($file_data)) {
-                    $s3_folder = $export_type['s3_folder'] ?: sanitize_title($export_type['name']);
-                    $file_prefix = $export_type['file_prefix'] ?: $export_type['name'];
+                    $s3_folder = isset($export_type['s3_folder']) ? $export_type['s3_folder'] : sanitize_title($export_type['name']);
+                    $file_prefix = isset($export_type['file_prefix']) ? $export_type['file_prefix'] : $export_type['name'];
                     
                     $this->s3_uploader->upload_file(
                         $s3_config['bucket'] ?: 'fundsonline-exports',
@@ -1018,8 +1028,8 @@ class Automation_Manager {
             }
             
             // Schedule the automation
-            $frequency = $settings['export_frequency'] ?? 'daily';
-            $time = $settings['export_time'] ?? '02:00';
+            $frequency = isset($settings['export_frequency']) ? $settings['export_frequency'] : 'daily';
+            $time = isset($settings['export_time']) ? $settings['export_time'] : '02:00';
             
             // Clear existing schedules
             wp_clear_scheduled_hook('wc_s3_export_automation');
@@ -1089,5 +1099,193 @@ class Automation_Manager {
         
         $orders = wc_get_orders($args);
         return count($orders);
+    }
+    
+    /**
+     * Create default export types configuration
+     */
+    private function create_default_export_types() {
+        $default_types = array(
+            array(
+                'id' => 'web_sales',
+                'name' => 'Web Sales',
+                'type' => 'orders',
+                'enabled' => true,
+                'frequency' => 'daily',
+                'time' => '01:30',
+                's3_folder' => 'FundsOnlineWebsiteSales',
+                'file_prefix' => 'FO-WebSales',
+                'statuses' => array('wc-processing', 'wc-completed')
+            ),
+            array(
+                'id' => 'web_sale_lines',
+                'name' => 'Web Sale Lines',
+                'type' => 'order_items',
+                'enabled' => true,
+                'frequency' => 'daily',
+                'time' => '01:30',
+                's3_folder' => 'FundsOnlineWebsiteSaleLineItems',
+                'file_prefix' => 'FO-WebSaleLines',
+                'statuses' => array('wc-processing', 'wc-completed')
+            )
+        );
+        
+        // Save the default configuration
+        $this->settings->update_export_types_config($default_types);
+        
+        return $default_types;
+    }
+    
+    /**
+     * Create standalone CSV export without WooCommerce dependency
+     */
+    private function create_standalone_csv_export($export_type, $date_param = null) {
+        $log_file = $this->get_log_file();
+        $timestamp = date('Y-m-d H:i:s');
+        
+        $this->log("[$timestamp] Creating standalone CSV export for '{$export_type['name']}'", $log_file);
+        
+        // Use yesterday's date if no date specified
+        $target_date = $date_param ?: date('Y-m-d', strtotime('-1 day'));
+        
+        // Generate filename
+        $date_parts = explode('-', $target_date);
+        $filename = $export_type['file_prefix'] . '-' . $date_parts[2] . '-' . $date_parts[1] . '-' . $date_parts[0] . '.csv';
+        
+        // Create export directory
+        $upload_dir = wp_upload_dir();
+        $export_dir = $upload_dir['basedir'] . '/wc-s3-exports/' . sanitize_title($export_type['name']) . '/';
+        
+        if (!file_exists($export_dir)) {
+            wp_mkdir_p($export_dir);
+        }
+        
+        $filepath = $export_dir . $filename;
+        
+        // Create CSV content based on export type
+        $csv_content = $this->generate_standalone_csv_content($export_type, $target_date);
+        
+        if (empty($csv_content)) {
+            $this->log("[$timestamp] No data found for standalone export '{$export_type['name']}' on $target_date", $log_file);
+            return false;
+        }
+        
+        // Write CSV file
+        if (file_put_contents($filepath, $csv_content) === false) {
+            $this->log("[$timestamp] Failed to write CSV file: $filepath", $log_file);
+            return false;
+        }
+        
+        $this->log("[$timestamp] Standalone CSV file created: $filename", $log_file);
+        
+        return array(
+            'file_name' => $filename,
+            'file_path' => $filepath
+        );
+    }
+    
+    /**
+     * Generate CSV content for standalone export
+     */
+    private function generate_standalone_csv_content($export_type, $target_date) {
+        global $wpdb;
+        
+        $csv_content = '';
+        
+        if ($export_type['type'] === 'orders' || $export_type['name'] === 'Web Sales') {
+            // Export orders
+            $csv_content = $this->generate_orders_csv($target_date, $export_type['statuses']);
+        } elseif ($export_type['type'] === 'order_items' || $export_type['name'] === 'Web Sale Lines') {
+            // Export order items
+            $csv_content = $this->generate_order_items_csv($target_date, $export_type['statuses']);
+        }
+        
+        return $csv_content;
+    }
+    
+    /**
+     * Generate orders CSV content
+     */
+    private function generate_orders_csv($target_date, $statuses) {
+        global $wpdb;
+        
+        $status_placeholders = implode(',', array_fill(0, count($statuses), '%s'));
+        $query = $wpdb->prepare(
+            "SELECT ID, post_date, post_status, meta_value as order_total 
+            FROM {$wpdb->posts} p 
+            LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_order_total'
+            WHERE p.post_type = 'shop_order' 
+            AND DATE(p.post_date) = %s 
+            AND p.post_status IN ($status_placeholders)
+            ORDER BY p.post_date ASC",
+            array_merge([$target_date], $statuses)
+        );
+        
+        $orders = $wpdb->get_results($query);
+        
+        if (empty($orders)) {
+            return '';
+        }
+        
+        // CSV headers
+        $csv_content = "Order ID,Order Date,Order Status,Order Total\n";
+        
+        // CSV data
+        foreach ($orders as $order) {
+            $order_id = $order->ID;
+            $order_date = $order->post_date;
+            $order_status = str_replace('wc-', '', $order->post_status);
+            $order_total = $order->order_total ?: '0.00';
+            
+            $csv_content .= "\"$order_id\",\"$order_date\",\"$order_status\",\"$order_total\"\n";
+        }
+        
+        return $csv_content;
+    }
+    
+    /**
+     * Generate order items CSV content
+     */
+    private function generate_order_items_csv($target_date, $statuses) {
+        global $wpdb;
+        
+        $status_placeholders = implode(',', array_fill(0, count($statuses), '%s'));
+        $query = $wpdb->prepare(
+            "SELECT o.ID as order_id, o.post_date, oi.order_item_id, oi.order_item_name, 
+                    oim_qty.meta_value as quantity, oim_total.meta_value as line_total
+            FROM {$wpdb->posts} o 
+            LEFT JOIN {$wpdb->prefix}woocommerce_order_items oi ON o.ID = oi.order_id
+            LEFT JOIN {$wpdb->prefix}woocommerce_order_itemmeta oim_qty ON oi.order_item_id = oim_qty.order_item_id AND oim_qty.meta_key = '_qty'
+            LEFT JOIN {$wpdb->prefix}woocommerce_order_itemmeta oim_total ON oi.order_item_id = oim_total.order_item_id AND oim_total.meta_key = '_line_total'
+            WHERE o.post_type = 'shop_order' 
+            AND DATE(o.post_date) = %s 
+            AND o.post_status IN ($status_placeholders)
+            AND oi.order_item_type = 'line_item'
+            ORDER BY o.post_date ASC, oi.order_item_id ASC",
+            array_merge([$target_date], $statuses)
+        );
+        
+        $order_items = $wpdb->get_results($query);
+        
+        if (empty($order_items)) {
+            return '';
+        }
+        
+        // CSV headers
+        $csv_content = "Order ID,Order Date,Item ID,Product Name,Quantity,Line Total\n";
+        
+        // CSV data
+        foreach ($order_items as $item) {
+            $order_id = $item->order_id;
+            $order_date = $item->post_date;
+            $item_id = $item->order_item_id;
+            $product_name = str_replace('"', '""', $item->order_item_name);
+            $quantity = $item->quantity ?: '1';
+            $line_total = $item->line_total ?: '0.00';
+            
+            $csv_content .= "\"$order_id\",\"$order_date\",\"$item_id\",\"$product_name\",\"$quantity\",\"$line_total\"\n";
+        }
+        
+        return $csv_content;
     }
 } 
