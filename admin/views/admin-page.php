@@ -288,30 +288,9 @@ function get_data_source_options($export_type, $selected_value = '') {
             <div class="status-indicator <?php echo $system_status['overall'] === 'healthy' ? 'success' : 'error'; ?>">
                 <?php echo $system_status['overall'] === 'healthy' ? 'Healthy' : 'Issues Detected'; ?>
             </div>
-            <p class="<?php echo $system_status['woocommerce'] ? 'status-active' : 'status-inactive'; ?>">
-                <strong>WooCommerce:</strong> 
-                <?php if ($system_status['woocommerce']): ?>
-                    <span style="color: #10b981;">✅ Active</span>
-                <?php else: ?>
-                    <span style="color: #ef4444;">❌ Inactive</span>
-                <?php endif; ?>
-            </p>
-            <p class="<?php echo $system_status['csv_export'] ? 'status-active' : 'status-inactive'; ?>">
-                <strong>CSV Export Plugin:</strong> 
-                <?php if ($system_status['csv_export']): ?>
-                    <span style="color: #10b981;">✅ Active</span>
-                <?php else: ?>
-                    <span style="color: #ef4444;">❌ Inactive</span>
-                <?php endif; ?>
-            </p>
-            <p class="<?php echo $system_status['action_scheduler'] ? 'status-active' : 'status-inactive'; ?>">
-                <strong>Action Scheduler:</strong> 
-                <?php if ($system_status['action_scheduler']): ?>
-                    <span style="color: #10b981;">✅ Working</span>
-                <?php else: ?>
-                    <span style="color: #ef4444;">❌ Issues</span>
-                <?php endif; ?>
-            </p>
+            <p><strong>WooCommerce:</strong> <?php echo $system_status['woocommerce'] ? '✅ Active' : '❌ Inactive'; ?></p>
+            <p><strong>CSV Export Plugin:</strong> <?php echo $system_status['csv_export'] ? '✅ Active' : '❌ Inactive'; ?></p>
+            <p><strong>Action Scheduler:</strong> <?php echo $system_status['action_scheduler'] ? '✅ Working' : '❌ Issues'; ?></p>
             <?php if (!empty($system_status['issues'])): ?>
                 <div class="status-issues">
                     <strong>Issues Found:</strong>
@@ -331,12 +310,12 @@ function get_data_source_options($export_type, $selected_value = '') {
                 <?php echo $s3_status['success'] ? 'Connected' : 'Not Configured'; ?>
             </div>
             <?php if ($s3_status['success']): ?>
-                <p class="status-active"><strong>Status:</strong> <span style="color: #10b981;">✅ Connected</span></p>
-                <p class="status-active"><strong>Buckets:</strong> <span style="color: #10b981;"><?php echo $s3_status['buckets']; ?> available</span></p>
-                <p class="status-active"><strong>Region:</strong> <span style="color: #10b981;"><?php echo esc_html($current_s3_config['region'] ?? 'us-east-1'); ?></span></p>
+                <p><strong>Status:</strong> ✅ Connected</p>
+                <p><strong>Buckets:</strong> <?php echo $s3_status['buckets']; ?> available</p>
+                <p><strong>Region:</strong> <?php echo esc_html($current_s3_config['region'] ?? 'us-east-1'); ?></p>
             <?php else: ?>
-                <p class="status-warning"><strong>Status:</strong> <span style="color: #f59e0b;">⚠️ <?php echo esc_html($s3_status['message'] ?? 'Not configured'); ?></span></p>
-                <p class="status-warning"><strong>Action:</strong> <span style="color: #f59e0b;">Configure S3 credentials below</span></p>
+                <p><strong>Status:</strong> ⚠️ <?php echo esc_html($s3_status['message'] ?? 'Not configured'); ?></p>
+                <p><strong>Action:</strong> Configure S3 credentials below</p>
             <?php endif; ?>
         </div>
 
@@ -346,36 +325,12 @@ function get_data_source_options($export_type, $selected_value = '') {
             <div class="status-indicator <?php echo $export_status['status'] === 'active' ? 'success' : 'warning'; ?>">
                 <?php echo $export_status['status'] === 'active' ? 'Active' : 'Inactive'; ?>
             </div>
-            <p class="<?php echo $export_status['last_export'] ? 'status-active' : 'status-warning'; ?>">
-                <strong>Last Export:</strong> 
-                <?php if ($export_status['last_export']): ?>
-                    <span style="color: #10b981;"><?php echo $export_status['last_export']; ?></span>
-                <?php else: ?>
-                    <span style="color: #f59e0b;">Never</span>
-                <?php endif; ?>
-            </p>
-            <p class="<?php echo $export_status['next_export'] ? 'status-active' : 'status-warning'; ?>">
-                <strong>Next Export:</strong> 
-                <?php if ($export_status['next_export']): ?>
-                    <span style="color: #10b981;"><?php echo $export_status['next_export']; ?></span>
-                <?php else: ?>
-                    <span style="color: #f59e0b;">Not Scheduled</span>
-                <?php endif; ?>
-            </p>
-            <p class="status-active"><strong>Total Exports:</strong> <span style="color: #10b981;"><?php echo $export_status['total_exports']; ?></span></p>
-            <p class="<?php echo $export_status['pending_jobs'] > 0 ? 'status-warning' : 'status-active'; ?>">
-                <strong>Pending Jobs:</strong> 
-                <?php if ($export_status['pending_jobs'] > 0): ?>
-                    <span style="color: #f59e0b;"><?php echo $export_status['pending_jobs']; ?></span>
-                <?php else: ?>
-                    <span style="color: #10b981;"><?php echo $export_status['pending_jobs']; ?></span>
-                <?php endif; ?>
-            </p>
+            <p><strong>Last Export:</strong> <?php echo $export_status['last_export'] ?: 'Never'; ?></p>
+            <p><strong>Next Export:</strong> <?php echo $export_status['next_export'] ?: 'Not Scheduled'; ?></p>
+            <p><strong>Total Exports:</strong> <?php echo $export_status['total_exports']; ?></p>
+            <p><strong>Pending Jobs:</strong> <?php echo $export_status['pending_jobs']; ?></p>
             <?php if ($export_status['status'] !== 'active'): ?>
-                <p class="status-warning">
-                    <strong>Action:</strong> 
-                    <a href="#" onclick="setupAutomation(); return false;" style="color: #f59e0b; text-decoration: underline;">Setup Automation</a>
-                </p>
+                <p><strong>Action:</strong> <a href="#" onclick="setupAutomation(); return false;">Setup Automation</a></p>
             <?php endif; ?>
         </div>
     </div>
