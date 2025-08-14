@@ -441,28 +441,39 @@ function get_data_source_options($export_type, $selected_value = '') {
             </div>
             <div class="wc-s3-modal-body">
                 <div class="wc-s3-history-filters">
-                    <div class="wc-s3-form-group">
-                        <label for="history_start_date">Start Date</label>
-                        <input type="date" id="history_start_date" name="history_start_date" 
-                               value="<?php echo date('Y-m-d', strtotime('-30 days')); ?>">
-                    </div>
-                    
-                    <div class="wc-s3-form-group">
-                        <label for="history_end_date">End Date</label>
-                        <input type="date" id="history_end_date" name="history_end_date" 
-                               value="<?php echo date('Y-m-d'); ?>">
-                    </div>
-                    
-                    <div class="wc-s3-form-group">
-                        <label for="history_export_type">Export Type</label>
-                        <select id="history_export_type" name="history_export_type">
-                            <option value="">All Types</option>
-                            <?php
-                            foreach ($export_types_config as $export_type) {
-                                echo '<option value="' . esc_attr($export_type['id']) . '">' . esc_html($export_type['name']) . '</option>';
-                            }
-                            ?>
-                        </select>
+                    <div class="wc-s3-filter-row">
+                        <div class="wc-s3-form-group">
+                            <label for="history_start_date">Start Date</label>
+                            <input type="date" id="history_start_date" name="history_start_date" 
+                                   value="<?php echo date('Y-m-d', strtotime('-30 days')); ?>">
+                        </div>
+                        
+                        <div class="wc-s3-form-group">
+                            <label for="history_end_date">End Date</label>
+                            <input type="date" id="history_end_date" name="history_end_date" 
+                                   value="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                        
+                        <div class="wc-s3-form-group">
+                            <label for="history_export_type">Export Type</label>
+                            <select id="history_export_type" name="history_export_type">
+                                <option value="">All Types</option>
+                                <?php
+                                foreach ($export_types_config as $export_type) {
+                                    echo '<option value="' . esc_attr($export_type['id']) . '">' . esc_html($export_type['name']) . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        
+                        <div class="wc-s3-form-group">
+                            <label for="history_trigger_type">Trigger Type</label>
+                            <select id="history_trigger_type" name="history_trigger_type">
+                                <option value="">All Triggers</option>
+                                <option value="manual">Manual</option>
+                                <option value="automatic">Automatic</option>
+                            </select>
+                        </div>
                     </div>
                     
                     <div class="wc-s3-history-filter-actions">
@@ -478,6 +489,7 @@ function get_data_source_options($export_type, $selected_value = '') {
                                 <th style="width:36px;"><input type="checkbox" id="history_select_all"></th>
                                 <th>Date</th>
                                 <th>Export Type</th>
+                                <th>Trigger Type</th>
                                 <th>File Name</th>
                                 <th>Status</th>
                                 <th>File Size</th>
@@ -1056,9 +1068,10 @@ function loadExportHistory() {
     const startDate = document.getElementById('history_start_date').value;
     const endDate = document.getElementById('history_end_date').value;
     const exportType = document.getElementById('history_export_type').value;
+    const triggerType = document.getElementById('history_trigger_type').value;
 
     const tbody = document.getElementById('export-history-tbody');
-    tbody.innerHTML = '<tr><td colspan="7" class="wc-s3-loading">Loading export history...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="wc-s3-loading">Loading export history...</td></tr>';
 
     fetch(wcS3ExportPro.ajaxUrl, {
         method: 'POST',
@@ -1068,7 +1081,8 @@ function loadExportHistory() {
         body: 'action=wc_s3_get_export_history&nonce=' + wcS3ExportPro.nonce + 
               '&start_date=' + startDate + 
               '&end_date=' + endDate + 
-              '&export_type=' + exportType
+              '&export_type=' + exportType +
+              '&trigger_type=' + triggerType
     })
     .then(response => response.json())
     .then(data => {
@@ -1077,12 +1091,14 @@ function loadExportHistory() {
             data.data.forEach(item => {
                 const row = document.createElement('tr');
                 const statusClass = item.status === 'completed' ? 'success' : item.status === 'failed' ? 'error' : 'warning';
+                const triggerClass = item.trigger_type === 'automatic' ? 'info' : 'warning';
                 const fileSize = item.file_size ? formatFileSize(item.file_size) : 'N/A';
                 
                 row.innerHTML = `
                     <td><input type=\"checkbox\" class=\"history-select\" value=\"${item.id}\"></td>
                     <td>${item.date}</td>
                     <td>${item.export_type_name || item.export_type}</td>
+                    <td><span class="wc-s3-status ${triggerClass}">${item.trigger_type || 'manual'}</span></td>
                     <td>${item.file_name}</td>
                     <td><span class="wc-s3-status ${statusClass}">${item.status}</span></td>
                     <td>${fileSize}</td>

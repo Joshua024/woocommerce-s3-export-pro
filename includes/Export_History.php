@@ -48,7 +48,7 @@ class Export_History {
     /**
      * Add export record to history
      */
-    public function add_export_record($export_type, $date, $file_name, $file_path, $export_name = '', $status = 'completed') {
+    public function add_export_record($export_type, $date, $file_name, $file_path, $export_name = '', $status = 'completed', $trigger_type = 'manual') {
         $history = $this->get_export_history();
         
         $record = array(
@@ -59,6 +59,7 @@ class Export_History {
             'file_name' => $file_name,
             'file_path' => $file_path,
             'status' => $status,
+            'trigger_type' => $trigger_type, // 'manual' or 'automatic'
             'created_at' => current_time('mysql'),
             'file_size' => file_exists($file_path) ? filesize($file_path) : 0,
             'file_exists' => file_exists($file_path)

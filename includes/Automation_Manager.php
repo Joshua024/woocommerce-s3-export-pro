@@ -109,15 +109,43 @@ class Automation_Manager {
                     $s3_folder = isset($export_type['s3_folder']) ? $export_type['s3_folder'] : sanitize_title($export_type['name']);
                     $file_prefix = isset($export_type['file_prefix']) ? $export_type['file_prefix'] : $export_type['name'];
                     
-                    $this->s3_uploader->upload_file(
+                    $upload_result = $this->s3_uploader->upload_file(
                         $s3_config['bucket'] ?: 'fundsonline-exports',
                         $file_data['file_name'],
                         $file_data['file_path'],
                         $s3_folder,
                         ''
                     );
-                    $success_count++;
-                    $this->log("[$timestamp] Export '{$export_type['name']}' successful", $log_file);
+                    
+                    if ($upload_result) {
+                        // Add to export history for automatic exports
+                        $this->export_history->add_export_record(
+                            $export_type['id'],
+                            $date_param ?: date('Y-m-d', strtotime('-1 day')),
+                            $file_data['file_name'],
+                            $file_data['file_path'],
+                            $export_type['name'],
+                            'completed',
+                            'automatic'
+                        );
+                        
+                        $success_count++;
+                        $this->log("[$timestamp] Export '{$export_type['name']}' successful", $log_file);
+                    } else {
+                        // Add failed record to history
+                        $this->export_history->add_export_record(
+                            $export_type['id'],
+                            $date_param ?: date('Y-m-d', strtotime('-1 day')),
+                            $file_data['file_name'],
+                            $file_data['file_path'],
+                            $export_type['name'],
+                            'failed',
+                            'automatic'
+                        );
+                        
+                        $failed_exports[] = $export_type['name'];
+                        $this->log("[$timestamp] Export '{$export_type['name']}' failed - S3 upload failed", $log_file);
+                    }
                 } else {
                     $failed_exports[] = $export_type['name'];
                     $this->log("[$timestamp] Export '{$export_type['name']}' failed - no file created", $log_file);
@@ -265,7 +293,8 @@ class Automation_Manager {
                             $file_data['file_name'],
                             $file_data['file_path'],
                             $export_type_config['name'],
-                            'completed'
+                            'completed',
+                            'manual'
                         );
                         
                         $success_count++;
@@ -278,7 +307,8 @@ class Automation_Manager {
                             $file_data['file_name'],
                             $file_data['file_path'],
                             $export_type_config['name'],
-                            'failed'
+                            'failed',
+                            'manual'
                         );
                         
                         $this->log("[$timestamp] S3 upload failed for $export_type_id on $date: " . $file_data['file_name'], $log_file);

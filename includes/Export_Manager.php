@@ -331,6 +331,7 @@ class Export_Manager {
         $start_date = isset($_POST['start_date']) ? sanitize_text_field($_POST['start_date']) : date('Y-m-d', strtotime('-30 days'));
         $end_date = isset($_POST['end_date']) ? sanitize_text_field($_POST['end_date']) : date('Y-m-d');
         $export_type = isset($_POST['export_type']) ? sanitize_text_field($_POST['export_type']) : '';
+        $trigger_type = isset($_POST['trigger_type']) ? sanitize_text_field($_POST['trigger_type']) : '';
         
         $export_history = new Export_History();
         
@@ -338,6 +339,13 @@ class Export_Manager {
             $history = $export_history->get_export_history_for_type($export_type);
         } else {
             $history = $export_history->get_export_history_for_date_range($start_date, $end_date);
+        }
+        
+        // Filter by trigger type if specified
+        if (!empty($trigger_type)) {
+            $history = array_filter($history, function($record) use ($trigger_type) {
+                return isset($record['trigger_type']) && $record['trigger_type'] === $trigger_type;
+            });
         }
         
         // Format the history data for display
@@ -351,6 +359,7 @@ class Export_Manager {
                 'file_name' => $record['file_name'],
                 'file_path' => $record['file_path'],
                 'status' => $record['status'],
+                'trigger_type' => isset($record['trigger_type']) ? $record['trigger_type'] : 'manual',
                 'file_size' => $record['file_size'],
                 'file_exists' => $record['file_exists'],
                 'created_at' => $record['created_at']
