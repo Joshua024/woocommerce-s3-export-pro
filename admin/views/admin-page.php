@@ -338,12 +338,12 @@ function get_data_source_options($export_type, $selected_value = '') {
     <!-- Quick Actions -->
     <div class="wc-s3-actions">
         <button class="wc-s3-btn primary" onclick="testS3Connection()">
-            <span class="wc-s3-loading" id="s3-loading" style="display: none;"></span>
+            <span class="wc-s3-btn-loading primary" id="s3-loading" style="display: none;"></span>
             🔗 Test S3 Connection
         </button>
         
         <button class="wc-s3-btn secondary" onclick="showManualExportModal()">
-            <span class="wc-s3-loading" id="export-loading" style="display: none;"></span>
+            <span class="wc-s3-btn-loading secondary" id="export-loading" style="display: none;"></span>
             📤 Run Manual Export
         </button>
         
@@ -419,7 +419,7 @@ function get_data_source_options($export_type, $selected_value = '') {
                     <div class="wc-s3-modal-actions">
                         <button type="button" class="wc-s3-btn secondary" onclick="closeManualExportModal()">Cancel</button>
                         <button type="submit" class="wc-s3-btn primary">
-                            <span class="wc-s3-loading" id="manual-export-loading" style="display: none;"></span>
+                            <span class="wc-s3-btn-loading primary" id="manual-export-loading" style="display: none;"></span>
                             📤 Run Export
                         </button>
                     </div>
@@ -861,9 +861,18 @@ function get_data_source_options($export_type, $selected_value = '') {
 function testS3Connection() {
     const loading = document.getElementById('s3-loading');
     const button = loading.parentElement;
+    const originalText = button.innerHTML;
     
+    // Show loading state
     loading.style.display = 'inline-flex';
     button.disabled = true;
+    button.style.opacity = '0.7';
+    
+    // Optional: Change button text during loading
+    const textNode = button.childNodes[button.childNodes.length - 1];
+    if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+        textNode.textContent = ' Testing Connection...';
+    }
     
     fetch(wcS3ExportPro.ajaxUrl, {
         method: 'POST',
@@ -876,15 +885,22 @@ function testS3Connection() {
     .then(data => {
         showNotification(data.success ? 'success' : 'error', data.message);
         if (data.success) {
-            location.reload();
+            setTimeout(() => location.reload(), 1500); // Small delay to show success message
         }
     })
     .catch(error => {
         showNotification('error', 'Connection test failed: ' + error.message);
     })
     .finally(() => {
+        // Reset button state
         loading.style.display = 'none';
         button.disabled = false;
+        button.style.opacity = '1';
+        
+        // Restore original text
+        if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+            textNode.textContent = ' 🔗 Test S3 Connection';
+        }
     });
 }
 
@@ -943,8 +959,10 @@ function runManualExport() {
         return;
     }
     
+    // Show loading state
     loading.style.display = 'inline-flex';
     button.disabled = true;
+    button.style.opacity = '0.7';
     
     // Add action and nonce
     formData.append('action', 'wc_s3_run_manual_export');
