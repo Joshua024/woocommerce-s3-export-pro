@@ -1012,7 +1012,7 @@ function closeLogsModal() {
 
 function loadLogs() {
     const logsContainer = document.getElementById('logs-content');
-    logsContainer.innerHTML = '<div class="wc-s3-loading">Loading logs...</div>';
+    logsContainer.innerHTML = '<div class="wc-s3-loading"><div class="wc-s3-loading-spinner"></div><p class="wc-s3-loading-text">Loading logs...</p></div>';
 
     fetch(wcS3ExportPro.ajaxUrl, {
         method: 'POST',
@@ -1071,7 +1071,7 @@ function loadExportHistory() {
     const triggerType = document.getElementById('history_trigger_type').value;
 
     const tbody = document.getElementById('export-history-tbody');
-    tbody.innerHTML = '<tr><td colspan="8" class="wc-s3-loading">Loading export history...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8"><div class="wc-s3-table-loading"><div class="wc-s3-loading-spinner"></div><p class="wc-s3-loading-text">Loading export history...</p></div></td></tr>';
 
     fetch(wcS3ExportPro.ajaxUrl, {
         method: 'POST',
@@ -1110,11 +1110,11 @@ function loadExportHistory() {
                 tbody.appendChild(row);
             });
         } else {
-            tbody.innerHTML = '<tr><td colspan="7" class="wc-s3-no-data">No export history found for the selected date range.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8"><div class="wc-s3-table-loading"><div class="wc-s3-loading-text" style="color: #6b7280;">No export history found for the selected date range.</div></div></td></tr>';
         }
     })
     .catch(error => {
-        tbody.innerHTML = '<tr><td colspan="6" class="wc-s3-error">Error loading export history: ' + error.message + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8"><div class="wc-s3-table-loading"><div class="wc-s3-loading-text" style="color: #dc2626;">Error loading export history: ' + error.message + '</div></div></td></tr>';
         showNotification('error', 'Error loading export history: ' + error.message);
     });
 }
