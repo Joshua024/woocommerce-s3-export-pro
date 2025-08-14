@@ -16,12 +16,16 @@
 - **Multiple Export Types**: Orders, customers, products, and more
 - **Real-time Monitoring**: See what's happening at a glance
 - **Email Notifications**: Get alerted when exports complete or fail
+- **Export History Tracking**: Complete audit trail of all exports
+- **Manual & Automatic Export Support**: Both trigger types supported
+- **Professional Loading States**: Beautiful UI feedback during operations
 
 ### 🛡️ **Enterprise-Grade Reliability**
 - **Automatic Recovery**: Self-healing when things go wrong
 - **Comprehensive Logging**: Detailed logs for troubleshooting
 - **Health Monitoring**: Proactive system checks
 - **Backup Systems**: Multiple fallback mechanisms
+- **System Status Monitoring**: Real-time health checks for all components
 
 ## 🚀 Quick Start (5 Minutes)
 
@@ -47,16 +51,19 @@
 ## 🎨 Beautiful User Interface
 
 ### Modern Dashboard
-- **Real-time Status**: See export health at a glance
+- **Real-time Status**: See export health at a glance with color-coded status cards
 - **Quick Actions**: One-click export testing and manual triggers
 - **Visual Progress**: Beautiful progress bars and status indicators
 - **Smart Notifications**: In-app alerts and email notifications
+- **Professional Loading States**: Smooth animations and feedback during operations
+- **Export History**: Complete audit trail with filtering and search capabilities
 
 ### Intuitive Settings
 - **Wizard Interface**: Step-by-step setup guides
 - **Smart Defaults**: Pre-configured for common use cases
-- **Visual Feedback**: Clear success/error messages
+- **Visual Feedback**: Clear success/error messages with professional styling
 - **Context Help**: Built-in help tooltips
+- **System Status Monitoring**: Real-time health checks for WooCommerce, CSV Export Plugin, and Action Scheduler
 
 ## 📊 What You Can Export
 
@@ -98,6 +105,12 @@
 - **Version Control**: Keep historical exports
 - **Cleanup Rules**: Automatic old file removal
 - **Compression**: Save storage space
+
+### 📊 **Export History & Tracking**
+- **Complete Audit Trail**: Track all manual and automatic exports
+- **Filtering & Search**: Filter exports by date, type, and trigger
+- **Export Status Tracking**: Monitor success/failure of each export
+- **Trigger Type Distinction**: Distinguish between manual and automatic exports
 
 ### 🔐 **Security & Privacy**
 - **Encrypted Transfers**: Secure S3 uploads
@@ -200,6 +213,9 @@ wp wc-s3 setup_s3_config YOUR_ACCESS_KEY YOUR_SECRET_KEY
 - **S3 Bucket**: Target S3 bucket for uploads
 - **S3 Region**: AWS region for your bucket
 - **Notifications**: Email alerts for success/failure
+- **Export Types**: Configure which data types to export (orders, customers, products, coupons)
+- **Date Range Selection**: Manual export for specific date ranges
+- **Force Export Option**: Skip duplicate checks when needed
 
 ## 🎮 Usage
 
@@ -207,19 +223,21 @@ wp wc-s3 setup_s3_config YOUR_ACCESS_KEY YOUR_SECRET_KEY
 
 1. **Access Dashboard**
    - Go to WooCommerce → S3 Export Pro
-   - View real-time system status
-   - Monitor export health
+   - View real-time system status with color-coded health indicators
+   - Monitor export health for WooCommerce, CSV Export Plugin, and Action Scheduler
 
 2. **Quick Actions**
-   - Test S3 connection
-   - Run manual exports
-   - Export for specific dates
-   - View recent logs
+   - Test S3 connection with professional loading states
+   - Run manual exports with date range selection
+   - Export for specific dates with export type configuration
+   - View export history with filtering capabilities
+   - Access detailed logs for troubleshooting
 
 3. **Settings Management**
-   - Configure S3 credentials
-   - Set export schedules
-   - Manage notifications
+   - Configure S3 credentials with connection testing
+   - Set export schedules and automation
+   - Manage notifications and alerts
+   - Configure export types and options
 
 ### WP-CLI Commands
 
@@ -251,6 +269,8 @@ wp wc-s3 check_s3_config
 - **S3 Connection Failed**: Check credentials and permissions
 - **Exports Not Running**: Verify scheduling and dependencies
 - **Missing Data**: Check export configuration and filters
+- **System Status Issues**: Monitor WooCommerce, CSV Export Plugin, and Action Scheduler health
+- **Export History Not Showing**: Check if exports are being triggered properly
 
 ## 🏆 Why Users Love It
 
@@ -281,6 +301,27 @@ Ready to automate your WooCommerce exports?
 4. **Start** automating!
 
 **No technical knowledge required. Just point, click, and automate!** 🎯
+
+## 📋 Recent Updates (v2.0.0)
+
+### ✨ New Features
+- **Export History Tracking**: Complete audit trail of all exports with filtering
+- **Manual & Automatic Export Support**: Both trigger types properly tracked
+- **Professional Loading States**: Beautiful UI feedback during operations
+- **Enhanced System Status Monitoring**: Real-time health checks for all components
+- **Improved Error Handling**: Better error messages and recovery mechanisms
+
+### 🎨 UI Improvements
+- **Color-coded Status Cards**: Visual health indicators for system components
+- **Professional Loading Spinners**: Smooth animations during operations
+- **Export History Modal**: Comprehensive export tracking with filters
+- **Better Visual Feedback**: Enhanced success/error message styling
+
+### 🔧 Technical Enhancements
+- **Trigger Type Distinction**: Distinguish between manual and automatic exports
+- **Enhanced Error Recovery**: Better handling of failed exports
+- **Improved Logging**: More detailed export activity tracking
+- **Better S3 Integration**: Enhanced connection testing and error handling
 
 ---
 
