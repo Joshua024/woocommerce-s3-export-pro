@@ -169,7 +169,7 @@ class Export_History {
         foreach ($history as $record) {
             if ($record['status'] === 'completed') {
                 $stats['successful_exports']++;
-            } else {
+            } elseif (in_array($record['status'], ['failed', 's3_upload_failed'])) {
                 $stats['failed_exports']++;
             }
             

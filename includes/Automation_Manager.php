@@ -109,6 +109,18 @@ class Automation_Manager {
                     $s3_folder = isset($export_type['s3_folder']) ? $export_type['s3_folder'] : sanitize_title($export_type['name']);
                     $file_prefix = isset($export_type['file_prefix']) ? $export_type['file_prefix'] : $export_type['name'];
                     
+                    // Always add to export history first, regardless of S3 upload result
+                    $export_date = $date_param ?: date('Y-m-d', strtotime('-1 day'));
+                    $this->export_history->add_export_record(
+                        $export_type['id'],
+                        $export_date,
+                        $file_data['file_name'],
+                        $file_data['file_path'],
+                        $export_type['name'],
+                        'completed', // Mark as completed since file was created successfully
+                        'automatic'
+                    );
+                    
                     $upload_result = $this->s3_uploader->upload_file(
                         $s3_config['bucket'] ?: 'fundsonline-exports',
                         $file_data['file_name'],
@@ -118,35 +130,36 @@ class Automation_Manager {
                     );
                     
                     if ($upload_result) {
-                        // Add to export history for automatic exports
-                        $this->export_history->add_export_record(
-                            $export_type['id'],
-                            $date_param ?: date('Y-m-d', strtotime('-1 day')),
-                            $file_data['file_name'],
-                            $file_data['file_path'],
-                            $export_type['name'],
-                            'completed',
-                            'automatic'
-                        );
-                        
                         $success_count++;
-                        $this->log("[$timestamp] Export '{$export_type['name']}' successful", $log_file);
+                        $this->log("[$timestamp] Export '{$export_type['name']}' successful - file created and uploaded to S3", $log_file);
                     } else {
-                        // Add failed record to history
+                        // Update the record to reflect S3 upload failure
                         $this->export_history->add_export_record(
                             $export_type['id'],
-                            $date_param ?: date('Y-m-d', strtotime('-1 day')),
+                            $export_date,
                             $file_data['file_name'],
                             $file_data['file_path'],
                             $export_type['name'],
-                            'failed',
+                            's3_upload_failed', // Special status for S3 upload failure
                             'automatic'
                         );
                         
                         $failed_exports[] = $export_type['name'];
-                        $this->log("[$timestamp] Export '{$export_type['name']}' failed - S3 upload failed", $log_file);
+                        $this->log("[$timestamp] Export '{$export_type['name']}' file created but S3 upload failed", $log_file);
                     }
                 } else {
+                    // Add failed record to history even when no file is created
+                    $export_date = $date_param ?: date('Y-m-d', strtotime('-1 day'));
+                    $this->export_history->add_export_record(
+                        $export_type['id'],
+                        $export_date,
+                        'failed_' . $export_type['name'] . '_' . $export_date . '.csv',
+                        '',
+                        $export_type['name'],
+                        'failed',
+                        'automatic'
+                    );
+                    
                     $failed_exports[] = $export_type['name'];
                     $this->log("[$timestamp] Export '{$export_type['name']}' failed - no file created", $log_file);
                 }
@@ -1002,11 +1015,22 @@ class Automation_Manager {
             }
             
             if (!empty($file_data)) {
+                // Always add to export history first, regardless of S3 upload result
+                $this->export_history->add_export_record(
+                    $export_type['id'],
+                    $yesterday,
+                    $file_data['file_name'],
+                    $file_data['file_path'],
+                    $export_type['name'],
+                    'completed', // Mark as completed since file was created successfully
+                    'automatic'
+                );
+                
                 $s3_config = $this->settings->get_s3_config();
                 $s3_folder = $export_type['s3_folder'] ?: sanitize_title($export_type['name']);
                 $file_prefix = $export_type['file_prefix'] ?: $export_type['name'];
                 
-                $this->s3_uploader->upload_file(
+                $upload_result = $this->s3_uploader->upload_file(
                     $s3_config['bucket'] ?: 'fundsonline-exports',
                     $file_data['file_name'],
                     $file_data['file_path'],
@@ -1014,8 +1038,32 @@ class Automation_Manager {
                     ''
                 );
                 
-                $this->log("[$timestamp] Export '{$export_type['name']}' completed successfully", $log_file);
+                if ($upload_result) {
+                    $this->log("[$timestamp] Export '{$export_type['name']}' completed successfully - file created and uploaded to S3", $log_file);
+                } else {
+                    // Update the record to reflect S3 upload failure
+                    $this->export_history->add_export_record(
+                        $export_type['id'],
+                        $yesterday,
+                        $file_data['file_name'],
+                        $file_data['file_path'],
+                        $export_type['name'],
+                        's3_upload_failed', // Special status for S3 upload failure
+                        'automatic'
+                    );
+                    $this->log("[$timestamp] Export '{$export_type['name']}' file created but S3 upload failed", $log_file);
+                }
             } else {
+                // Add failed record to history even when no file is created
+                $this->export_history->add_export_record(
+                    $export_type['id'],
+                    $yesterday,
+                    'failed_' . $export_type['name'] . '_' . $yesterday . '.csv',
+                    '',
+                    $export_type['name'],
+                    'failed',
+                    'automatic'
+                );
                 $this->log("[$timestamp] Export '{$export_type['name']}' failed - no file created", $log_file);
             }
         } catch (\Exception $e) {

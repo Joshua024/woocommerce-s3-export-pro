@@ -1108,17 +1108,42 @@ function loadExportHistory() {
         if (data.success && data.data && data.data.length > 0) {
             data.data.forEach(item => {
                 const row = document.createElement('tr');
-                const statusClass = item.status === 'completed' ? 'success' : item.status === 'failed' ? 'error' : 'warning';
+                let statusClass = 'warning';
+                if (item.status === 'completed') {
+                    statusClass = 'success';
+                } else if (item.status === 'failed') {
+                    statusClass = 'error';
+                } else if (item.status === 's3_upload_failed') {
+                    statusClass = 'warning';
+                }
                 const triggerClass = item.trigger_type === 'automatic' ? 'info' : 'warning';
                 const fileSize = item.file_size ? formatFileSize(item.file_size) : 'N/A';
+                
+                // Format status text for better display
+                let statusText = item.status;
+                if (item.status === 's3_upload_failed') {
+                    statusText = 'S3 Upload Failed';
+                } else if (item.status === 'completed') {
+                    statusText = 'Completed';
+                } else if (item.status === 'failed') {
+                    statusText = 'Failed';
+                }
+                
+                // Format trigger type text
+                let triggerText = item.trigger_type || 'manual';
+                if (triggerText === 'automatic') {
+                    triggerText = 'Automatic';
+                } else if (triggerText === 'manual') {
+                    triggerText = 'Manual';
+                }
                 
                 row.innerHTML = `
                     <td><input type=\"checkbox\" class=\"history-select\" value=\"${item.id}\"></td>
                     <td>${item.date}</td>
                     <td>${item.export_type_name || item.export_type}</td>
-                    <td><span class="wc-s3-status ${triggerClass}">${item.trigger_type || 'manual'}</span></td>
+                    <td><span class="wc-s3-status ${triggerClass}">${triggerText}</span></td>
                     <td>${item.file_name}</td>
-                    <td><span class="wc-s3-status ${statusClass}">${item.status}</span></td>
+                    <td><span class="wc-s3-status ${statusClass}">${statusText}</span></td>
                     <td>${fileSize}</td>
                     <td>
                         ${item.file_exists ? `<button type="button" class="wc-s3-btn info small" onclick="downloadExportFile('${item.file_path}')">Download</button>` : '<span class="wc-s3-status error">File not found</span>'}
