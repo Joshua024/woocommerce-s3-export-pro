@@ -150,9 +150,11 @@ Ready to automate your WooCommerce exports?
 
 **No technical knowledge required. Just point, click, and automate!** 🎯
 
-## 📋 What's New in v2.0.0
+## 📋 What's New in v2.0.1
 
 ### ✨ Enhanced Features
+- **Source Website Field**: Added source_website field to order exports for Salesforce integration
+- **Salesforce Compatibility**: Fixes Salesforce automation issues by including required source website data
 - **Export History**: Complete audit trail with filtering and search
 - **Professional UI**: Beautiful loading states and animations
 - **System Monitoring**: Real-time health checks for all components

@@ -247,6 +247,7 @@ class CSV_Generator {
                         'shipping_country' => $order->get_shipping_country(),
                         'shipping_company' => $order->get_shipping_company(),
                         'customer_note' => $order->get_customer_note(),
+                        'source_website' => $this->get_source_website(),
                         'line_items' => '', // Simplified - skip complex extraction
                         'shipping_items' => '', // Simplified - skip complex extraction
                         'fee_items' => '', // Simplified - skip complex extraction
@@ -842,6 +843,35 @@ class CSV_Generator {
         }
         
         return $log_dir . 'csv-generator-' . date('Y-m-d') . '.log';
+    }
+    
+    /**
+     * Get source website URL for Salesforce integration
+     */
+    private function get_source_website() {
+        // Get the site URL from WordPress
+        $site_url = get_site_url();
+        
+        // If site_url is not available, try to get it from wp-config constants
+        if (empty($site_url) || $site_url === 'http://' || $site_url === 'https://') {
+            if (defined('WP_HOME')) {
+                $site_url = WP_HOME;
+            } elseif (defined('WP_SITEURL')) {
+                $site_url = WP_SITEURL;
+            } else {
+                // Fallback to current domain
+                $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+                $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+                $site_url = $protocol . $host;
+            }
+        }
+        
+        // Ensure we have a proper URL
+        if (empty($site_url) || $site_url === 'http://' || $site_url === 'https://') {
+            $site_url = 'https://fundsonline.co.uk'; // Default fallback for DSC Funds Online
+        }
+        
+        return $site_url;
     }
     
     /**

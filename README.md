@@ -73,6 +73,7 @@
 - Customer information
 - Payment details
 - Shipping information
+- **Source Website** (for Salesforce integration)
 
 ### 👥 **Customer Data**
 - Customer profiles
@@ -302,9 +303,11 @@ Ready to automate your WooCommerce exports?
 
 **No technical knowledge required. Just point, click, and automate!** 🎯
 
-## 📋 Recent Updates (v2.0.0)
+## 📋 Recent Updates (v2.0.1)
 
 ### ✨ New Features
+- **Source Website Field**: Added source_website field to order exports for Salesforce integration
+- **Salesforce Compatibility**: Ensures proper automation in Salesforce by including required source website data
 - **Export History Tracking**: Complete audit trail of all exports with filtering
 - **Manual & Automatic Export Support**: Both trigger types properly tracked
 - **Professional Loading States**: Beautiful UI feedback during operations
