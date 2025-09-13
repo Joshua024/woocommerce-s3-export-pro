@@ -219,8 +219,14 @@ class CSV_Generator {
                         'refunded_total' => $order->get_total_refunded(),
                         'order_currency' => $order->get_currency(),
                         'payment_method' => $order->get_payment_method(),
+                        // Additional payment meta/derived fields
+                        'worldpay_transaction_id' => method_exists($order, 'get_transaction_id') ? $order->get_transaction_id() : '',
+                        'transaction_type' => method_exists($order, 'get_payment_method_title') ? $order->get_payment_method_title() : $order->get_payment_method(),
                         'shipping_method' => $order->get_shipping_method(),
                         'customer_id' => $order->get_customer_id(),
+                        // Custom billing meta
+                        'charity_number' => $order->get_meta('_billing_charity_number', true),
+                        'billing_title' => $order->get_meta('_billing_title', true),
                         'billing_first_name' => $order->get_billing_first_name(),
                         'billing_last_name' => $order->get_billing_last_name(),
                         'billing_full_name' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
@@ -247,6 +253,7 @@ class CSV_Generator {
                         'shipping_country' => $order->get_shipping_country(),
                         'shipping_company' => $order->get_shipping_company(),
                         'customer_note' => $order->get_customer_note(),
+                        // Source Website (already requested by stakeholders)
                         'source_website' => $this->get_source_website(),
                         'line_items' => '', // Simplified - skip complex extraction
                         'shipping_items' => '', // Simplified - skip complex extraction
