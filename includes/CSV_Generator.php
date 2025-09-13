@@ -262,7 +262,7 @@ class CSV_Generator {
                         'coupon_items' => $this->format_coupon_items($this->get_coupon_items($order)),
                         'refunds' => $this->format_refunds($this->get_refunds($order)),
                         'order_notes' => $this->format_order_notes($this->get_order_notes($order)),
-                        'download_permissions' => '', // Keep simplified for now as method is complex
+                        'download_permissions' => $this->format_download_permissions($this->get_download_permissions($order)),
                         'order_meta' => $this->get_order_meta($order)
                     );
                     
@@ -289,8 +289,8 @@ class CSV_Generator {
                             
                             // Get product ID safely
                             if ($item->get_type() === 'line_item') {
-                                $product_id = isset($item->legacy_values['product_id']) ? $item->legacy_values['product_id'] : $item['product_id'];
-                                $variation_id = isset($item->legacy_values['variation_id']) ? $item->legacy_values['variation_id'] : $item['variation_id'];
+                                $product_id = method_exists($item, 'get_product_id') ? $item->get_product_id() : 0;
+                                $variation_id = method_exists($item, 'get_variation_id') ? $item->get_variation_id() : 0;
                             }
                             
                             $product = $product_id ? wc_get_product($product_id) : null;
@@ -304,14 +304,14 @@ class CSV_Generator {
                             // Use proper WooCommerce item data access for product items
                             if ($item->get_type() === 'line_item') {
                                 // These methods exist on WC_Order_Item_Product
-                                $item_data['item_subtotal'] = isset($item->legacy_values['subtotal']) ? $item->legacy_values['subtotal'] : $item['subtotal'];
-                                $item_data['item_subtotal_tax'] = isset($item->legacy_values['subtotal_tax']) ? $item->legacy_values['subtotal_tax'] : $item['subtotal_tax'];
-                                $item_data['item_total'] = isset($item->legacy_values['total']) ? $item->legacy_values['total'] : $item['total'];
-                                $item_data['item_total_tax'] = isset($item->legacy_values['total_tax']) ? $item->legacy_values['total_tax'] : $item['total_tax'];
+                                $item_data['item_subtotal'] = method_exists($item, 'get_subtotal') ? $item->get_subtotal() : 0;
+                                $item_data['item_subtotal_tax'] = method_exists($item, 'get_subtotal_tax') ? $item->get_subtotal_tax() : 0;
+                                $item_data['item_total'] = method_exists($item, 'get_total') ? $item->get_total() : 0;
+                                $item_data['item_total_tax'] = method_exists($item, 'get_total_tax') ? $item->get_total_tax() : 0;
                                 
                                 // Calculate price from total/quantity
                                 $quantity = $item->get_quantity();
-                                $total = isset($item->legacy_values['total']) ? $item->legacy_values['total'] : $item['total'];
+                                $total = method_exists($item, 'get_total') ? $item->get_total() : 0;
                                 $item_data['item_price'] = $quantity > 0 ? wc_format_decimal($total / $quantity, 2) : 0;
                             } else {
                                 // Fallback for other item types
@@ -666,8 +666,6 @@ class CSV_Generator {
                 'item_subtotal_tax' => method_exists($item, 'get_subtotal_tax') ? $item->get_subtotal_tax() : '',
                 'item_total' => method_exists($item, 'get_total') ? $item->get_total() : '',
                 'item_total_tax' => method_exists($item, 'get_total_tax') ? $item->get_total_tax() : '',
-                'item_refunded' => method_exists($item, 'get_total_refunded') ? $item->get_total_refunded() : '',
-                'item_refunded_qty' => method_exists($item, 'get_qty_refunded') ? $item->get_qty_refunded() : '',
                 'item_meta' => $this->get_item_meta($item),
                 'item_price' => method_exists($item, 'get_price') ? $item->get_price() : ''
             );
@@ -744,7 +742,7 @@ class CSV_Generator {
                 'refund_reason' => method_exists($refund, 'get_reason') ? $refund->get_reason() : '',
                 'refund_amount' => $refund->get_amount(),
                 'refund_date' => $refund->get_date_created()->format('Y-m-d H:i:s'),
-                'refund_meta' => $this->get_order_meta($refund)
+                // 'refund_meta' => $this->get_order_meta($refund) // Removed to prevent infinite loop
             );
             $refunds[] = $refund_data;
         }
@@ -753,17 +751,31 @@ class CSV_Generator {
 
     private function get_order_notes($order) {
         $notes = array();
-        $customer_notes = $order->get_customer_notes();
-        if (is_array($customer_notes)) {
-            foreach ($customer_notes as $note) {
-                $notes[] = array(
-                    'note_id' => isset($note->id) ? $note->id : '',
-                    'note_author' => isset($note->author) ? $note->author : '',
-                    'note_date' => isset($note->date_created) ? $note->date_created->format('Y-m-d H:i:s') : '',
-                    'note_content' => isset($note->note) ? $note->note : ''
-                );
+        
+        // Try to get customer notes safely
+        try {
+            if (method_exists($order, 'get_customer_order_notes')) {
+                $customer_notes = $order->get_customer_order_notes();
+            } else {
+                // Fallback method - just return empty for now to avoid hanging
+                return $notes;
             }
+            
+            if (is_array($customer_notes)) {
+                foreach ($customer_notes as $note) {
+                    $notes[] = array(
+                        'note_id' => isset($note->comment_ID) ? $note->comment_ID : '',
+                        'note_author' => isset($note->comment_author) ? $note->comment_author : '',
+                        'note_date' => isset($note->comment_date) ? $note->comment_date : '',
+                        'note_content' => isset($note->comment_content) ? $note->comment_content : ''
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            // If there's any error, just return empty notes
+            return $notes;
         }
+        
         return $notes;
     }
 
@@ -1026,6 +1038,29 @@ class CSV_Generator {
             }
         }
         return implode(',', $formatted_notes);
+    }
+    
+    /**
+     * Format download permissions for CSV output
+     */
+    private function format_download_permissions($download_permissions) {
+        if (empty($download_permissions)) {
+            return '';
+        }
+        
+        $formatted_permissions = array();
+        foreach ($download_permissions as $permission) {
+            $formatted_permission = array();
+            foreach ($permission as $key => $value) {
+                if (!empty($value) || $value === '0' || $value === 0) {
+                    $formatted_permission[] = $key . ':' . $value;
+                }
+            }
+            if (!empty($formatted_permission)) {
+                $formatted_permissions[] = implode('|', $formatted_permission);
+            }
+        }
+        return implode(',', $formatted_permissions);
     }
     
     /**

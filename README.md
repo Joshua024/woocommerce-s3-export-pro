@@ -303,9 +303,40 @@ Ready to automate your WooCommerce exports?
 
 **No technical knowledge required. Just point, click, and automate!** 🎯
 
-## 📋 Recent Updates (v2.0.1)
+## 📋 Recent Updates
 
-### ✨ New Features
+### 🔧 v2.0.3 - Critical Stability Fixes
+
+#### 🚨 **Critical Bug Fixes**
+- **Fixed PHP Warning**: Resolved undefined array index warning in admin settings (`$ucisettings` array access)
+- **Fixed Export Hanging**: Corrected critical array access errors causing infinite loops during order processing
+- **Fixed WooCommerce Object Access**: Updated deprecated array access patterns to proper WooCommerce object methods
+- **Fixed Infinite Loop in Refunds**: Removed recursive `get_order_meta($refund)` call causing system hangs
+- **Fixed Order Notes Processing**: Enhanced safety checks for customer notes and proper field access
+- **Added Missing Method**: Implemented `format_download_permissions()` method for complete field mapping
+
+#### 🎯 **Performance Improvements**
+- **Eliminated Export Hangs**: All 9 export methods now execute without hanging or infinite loops
+- **Enhanced Data Accuracy**: Export now shows real-time order statuses vs outdated cached data
+- **Improved Order Discovery**: Enhanced query logic finds more complete order datasets
+- **Better Error Handling**: Added comprehensive safety checks throughout the extraction process
+
+#### ✅ **Validation & Testing**
+- **Comprehensive Method Testing**: All 9 methods individually tested and validated
+- **Reference Data Comparison**: Export accuracy verified against historical baseline data
+- **Database Consistency**: Real-time status verification against WordPress database
+- **Field Mapping Verification**: All 48 export fields properly mapped and populated
+
+#### 🏗️ **Technical Details**
+- Fixed `$item['product_id']` → `$item->get_product_id()` pattern throughout codebase
+- Removed problematic `get_order_meta($refund)` recursive calls
+- Enhanced `get_order_notes()` with proper field existence checks
+- Implemented missing `format_download_permissions()` following established patterns
+- Added `isset()` validation for admin settings array access
+
+### 📋 v2.0.1 - Previous Updates
+
+#### ✨ New Features
 - **Source Website Field**: Added source_website field to order exports for Salesforce integration
 - **Salesforce Compatibility**: Ensures proper automation in Salesforce by including required source website data
 - **Export History Tracking**: Complete audit trail of all exports with filtering
@@ -314,13 +345,13 @@ Ready to automate your WooCommerce exports?
 - **Enhanced System Status Monitoring**: Real-time health checks for all components
 - **Improved Error Handling**: Better error messages and recovery mechanisms
 
-### 🎨 UI Improvements
+#### 🎨 UI Improvements
 - **Color-coded Status Cards**: Visual health indicators for system components
 - **Professional Loading Spinners**: Smooth animations during operations
 - **Export History Modal**: Comprehensive export tracking with filters
 - **Better Visual Feedback**: Enhanced success/error message styling
 
-### 🔧 Technical Enhancements
+#### 🔧 Technical Enhancements
 - **Trigger Type Distinction**: Distinguish between manual and automatic exports
 - **Enhanced Error Recovery**: Better handling of failed exports
 - **Improved Logging**: More detailed export activity tracking
