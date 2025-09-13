@@ -62,7 +62,7 @@ class CSV_Generator {
         $this->log("[$timestamp] Date param: $date_param", $log_file);
         
         // Get field mappings
-        $field_mappings = $export_type['field_mappings'] ?? [];
+        $field_mappings = isset($export_type['field_mappings']) ? $export_type['field_mappings'] : array();
         
         $this->log("[$timestamp] Field mappings count: " . count($field_mappings), $log_file);
         $this->log("[$timestamp] Field mappings details: " . print_r($field_mappings, true), $log_file);
@@ -255,15 +255,15 @@ class CSV_Generator {
                         'customer_note' => $order->get_customer_note(),
                         // Source Website (already requested by stakeholders)
                         'source_website' => $this->get_source_website(),
-                        'line_items' => '', // Simplified - skip complex extraction
-                        'shipping_items' => '', // Simplified - skip complex extraction
-                        'fee_items' => '', // Simplified - skip complex extraction
-                        'tax_items' => '', // Simplified - skip complex extraction
-                        'coupon_items' => '', // Simplified - skip complex extraction
-                        'refunds' => '', // Simplified - skip complex extraction
-                        'order_notes' => '', // Simplified - skip complex extraction
-                        'download_permissions' => '', // Simplified - skip complex extraction
-                        'order_meta' => '' // Simplified - skip complex extraction
+                        'line_items' => $this->format_line_items($this->get_line_items($order)),
+                        'shipping_items' => $this->format_shipping_items($this->get_shipping_items($order)),
+                        'fee_items' => $this->format_fee_items($this->get_fee_items($order)),
+                        'tax_items' => $this->format_tax_items($this->get_tax_items($order)),
+                        'coupon_items' => $this->format_coupon_items($this->get_coupon_items($order)),
+                        'refunds' => $this->format_refunds($this->get_refunds($order)),
+                        'order_notes' => $this->format_order_notes($this->get_order_notes($order)),
+                        'download_permissions' => '', // Keep simplified for now as method is complex
+                        'order_meta' => $this->get_order_meta($order)
                     );
                     
                     $this->log("[$timestamp] Order data extracted successfully for order ID: {$order_id}", $log_file);
@@ -287,12 +287,10 @@ class CSV_Generator {
                             $product_id = 0;
                             $variation_id = 0;
                             
-                            if (method_exists($item, 'get_product_id')) {
-                                $product_id = $item->get_product_id();
-                            }
-                            
-                            if (method_exists($item, 'get_variation_id')) {
-                                $variation_id = $item->get_variation_id();
+                            // Get product ID safely
+                            if ($item->get_type() === 'line_item') {
+                                $product_id = isset($item->legacy_values['product_id']) ? $item->legacy_values['product_id'] : $item['product_id'];
+                                $variation_id = isset($item->legacy_values['variation_id']) ? $item->legacy_values['variation_id'] : $item['variation_id'];
                             }
                             
                             $product = $product_id ? wc_get_product($product_id) : null;
@@ -302,14 +300,35 @@ class CSV_Generator {
                             $item_data['item_name'] = $item->get_name();
                             $item_data['item_sku'] = $product ? $product->get_sku() : '';
                             $item_data['item_quantity'] = $item->get_quantity();
-                            $item_data['item_subtotal'] = method_exists($item, 'get_subtotal') ? $item->get_subtotal() : 0;
-                            $item_data['item_subtotal_tax'] = method_exists($item, 'get_subtotal_tax') ? $item->get_subtotal_tax() : 0;
-                            $item_data['item_total'] = method_exists($item, 'get_total') ? $item->get_total() : 0;
-                            $item_data['item_total_tax'] = method_exists($item, 'get_total_tax') ? $item->get_total_tax() : 0;
-                            $item_data['item_refunded'] = method_exists($item, 'get_total_refunded') ? $item->get_total_refunded() : 0;
-                            $item_data['item_refunded_qty'] = method_exists($item, 'get_qty_refunded') ? $item->get_qty_refunded() : 0;
+                            
+                            // Use proper WooCommerce item data access for product items
+                            if ($item->get_type() === 'line_item') {
+                                // These methods exist on WC_Order_Item_Product
+                                $item_data['item_subtotal'] = isset($item->legacy_values['subtotal']) ? $item->legacy_values['subtotal'] : $item['subtotal'];
+                                $item_data['item_subtotal_tax'] = isset($item->legacy_values['subtotal_tax']) ? $item->legacy_values['subtotal_tax'] : $item['subtotal_tax'];
+                                $item_data['item_total'] = isset($item->legacy_values['total']) ? $item->legacy_values['total'] : $item['total'];
+                                $item_data['item_total_tax'] = isset($item->legacy_values['total_tax']) ? $item->legacy_values['total_tax'] : $item['total_tax'];
+                                
+                                // Calculate price from total/quantity
+                                $quantity = $item->get_quantity();
+                                $total = isset($item->legacy_values['total']) ? $item->legacy_values['total'] : $item['total'];
+                                $item_data['item_price'] = $quantity > 0 ? wc_format_decimal($total / $quantity, 2) : 0;
+                            } else {
+                                // Fallback for other item types
+                                $item_data['item_subtotal'] = 0;
+                                $item_data['item_subtotal_tax'] = 0;
+                                $item_data['item_total'] = 0;
+                                $item_data['item_total_tax'] = 0;
+                                $item_data['item_price'] = 0;
+                            }
+                            
+                            // For refunded amounts, calculate from order refunds
+                            $refunded_amount = $order->get_total_refunded_for_item($item_id);
+                            $refunded_qty = $order->get_qty_refunded_for_item($item_id);
+                            $item_data['item_refunded'] = wc_format_decimal($refunded_amount, 2);
+                            $item_data['item_refunded_qty'] = $refunded_qty;
+                            
                             $item_data['item_meta'] = $this->get_item_meta($item);
-                            $item_data['item_price'] = method_exists($item, 'get_price') ? $item->get_price() : 0;
                             
                             $data[] = $item_data;
                         } catch (\Exception $e) {
@@ -582,7 +601,7 @@ class CSV_Generator {
         foreach ($data as $row) {
             $csv_row = array();
             foreach (array_keys($converted_field_mappings) as $field_key) {
-                $csv_row[] = $row[$field_key] ?? '';
+                $csv_row[] = isset($row[$field_key]) ? $row[$field_key] : '';
             }
             fputcsv($file_handle, $csv_row);
         }
@@ -836,6 +855,177 @@ class CSV_Generator {
             $meta[] = $meta_item->key . ': ' . $meta_item->value;
         }
         return implode('; ', $meta);
+    }
+    
+    /**
+     * Format line items for CSV output
+     */
+    private function format_line_items($line_items) {
+        if (empty($line_items)) {
+            return '';
+        }
+        
+        $formatted_items = array();
+        foreach ($line_items as $item) {
+            $formatted_parts = array();
+            
+            // Format in the same style as reference CSV
+            if (!empty($item['item_id'])) $formatted_parts[] = 'id:' . $item['item_id'];
+            if (!empty($item['item_name'])) $formatted_parts[] = 'name:' . $item['item_name'];
+            if (!empty($item['item_product_id'])) $formatted_parts[] = 'product_id:' . $item['item_product_id'];
+            if (!empty($item['item_sku'])) $formatted_parts[] = 'sku:' . $item['item_sku'];
+            if (isset($item['item_quantity'])) $formatted_parts[] = 'quantity:' . $item['item_quantity'];
+            if (isset($item['item_subtotal'])) $formatted_parts[] = 'subtotal:' . $item['item_subtotal'];
+            if (isset($item['item_subtotal_tax'])) $formatted_parts[] = 'subtotal_tax:' . $item['item_subtotal_tax'];
+            if (isset($item['item_total'])) $formatted_parts[] = 'total:' . $item['item_total'];
+            if (isset($item['item_total_tax'])) $formatted_parts[] = 'total_tax:' . $item['item_total_tax'];
+            if (isset($item['item_refunded'])) $formatted_parts[] = 'refunded:' . $item['item_refunded'];
+            if (isset($item['item_refunded_qty'])) $formatted_parts[] = 'refunded_qty:' . $item['item_refunded_qty'];
+            if (!empty($item['item_meta'])) $formatted_parts[] = 'meta:' . str_replace(array('|', ','), array(' ', ' '), $item['item_meta']);
+            
+            if (!empty($formatted_parts)) {
+                $formatted_items[] = implode('|', $formatted_parts);
+            }
+        }
+        return implode(',', $formatted_items);
+    }
+    
+    /**
+     * Format shipping items for CSV output
+     */
+    private function format_shipping_items($shipping_items) {
+        if (empty($shipping_items)) {
+            return '';
+        }
+        
+        $formatted_items = array();
+        foreach ($shipping_items as $item) {
+            $formatted_item = array();
+            foreach ($item as $key => $value) {
+                if (!empty($value) || $value === '0' || $value === 0) {
+                    $formatted_item[] = $key . ':' . $value;
+                }
+            }
+            if (!empty($formatted_item)) {
+                $formatted_items[] = implode('|', $formatted_item);
+            }
+        }
+        return implode(',', $formatted_items);
+    }
+    
+    /**
+     * Format fee items for CSV output
+     */
+    private function format_fee_items($fee_items) {
+        if (empty($fee_items)) {
+            return '';
+        }
+        
+        $formatted_items = array();
+        foreach ($fee_items as $item) {
+            $formatted_item = array();
+            foreach ($item as $key => $value) {
+                if (!empty($value) || $value === '0' || $value === 0) {
+                    $formatted_item[] = $key . ':' . $value;
+                }
+            }
+            if (!empty($formatted_item)) {
+                $formatted_items[] = implode('|', $formatted_item);
+            }
+        }
+        return implode(',', $formatted_items);
+    }
+    
+    /**
+     * Format tax items for CSV output
+     */
+    private function format_tax_items($tax_items) {
+        if (empty($tax_items)) {
+            return '';
+        }
+        
+        $formatted_items = array();
+        foreach ($tax_items as $item) {
+            $formatted_item = array();
+            foreach ($item as $key => $value) {
+                if (!empty($value) || $value === '0' || $value === 0) {
+                    $formatted_item[] = $key . ':' . $value;
+                }
+            }
+            if (!empty($formatted_item)) {
+                $formatted_items[] = implode('|', $formatted_item);
+            }
+        }
+        return implode(',', $formatted_items);
+    }
+    
+    /**
+     * Format coupon items for CSV output
+     */
+    private function format_coupon_items($coupon_items) {
+        if (empty($coupon_items)) {
+            return '';
+        }
+        
+        $formatted_items = array();
+        foreach ($coupon_items as $item) {
+            $formatted_item = array();
+            foreach ($item as $key => $value) {
+                if (!empty($value) || $value === '0' || $value === 0) {
+                    $formatted_item[] = $key . ':' . $value;
+                }
+            }
+            if (!empty($formatted_item)) {
+                $formatted_items[] = implode('|', $formatted_item);
+            }
+        }
+        return implode(',', $formatted_items);
+    }
+    
+    /**
+     * Format refunds for CSV output
+     */
+    private function format_refunds($refunds) {
+        if (empty($refunds)) {
+            return '';
+        }
+        
+        $formatted_items = array();
+        foreach ($refunds as $refund) {
+            $formatted_item = array();
+            foreach ($refund as $key => $value) {
+                if (!empty($value) || $value === '0' || $value === 0) {
+                    $formatted_item[] = $key . ':' . $value;
+                }
+            }
+            if (!empty($formatted_item)) {
+                $formatted_items[] = implode('|', $formatted_item);
+            }
+        }
+        return implode(',', $formatted_items);
+    }
+    
+    /**
+     * Format order notes for CSV output
+     */
+    private function format_order_notes($order_notes) {
+        if (empty($order_notes)) {
+            return '';
+        }
+        
+        $formatted_notes = array();
+        foreach ($order_notes as $note) {
+            $formatted_note = array();
+            foreach ($note as $key => $value) {
+                if (!empty($value)) {
+                    $formatted_note[] = $key . ':' . $value;
+                }
+            }
+            if (!empty($formatted_note)) {
+                $formatted_notes[] = implode('|', $formatted_note);
+            }
+        }
+        return implode(',', $formatted_notes);
     }
     
     /**
