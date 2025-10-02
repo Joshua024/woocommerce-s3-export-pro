@@ -2058,8 +2058,7 @@ function getDefaultFields(exportType) {
             { key: 'tax_items', label: 'tax_items' },
             { key: 'coupon_items', label: 'coupon_items' },
             { key: 'refunds', label: 'refunds' },
-            { key: 'order_notes', label: 'order_notes' },
-            { key: 'source_website', label: 'source_website' }
+            { key: 'order_notes', label: 'order_notes' }
         ],
         'order_items': [
             { key: 'order_id', label: 'order_id' },
