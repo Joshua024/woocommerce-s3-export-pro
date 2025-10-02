@@ -1246,7 +1246,7 @@ function loadExportHistory() {
                 row.innerHTML = `
                     <td><input type=\"checkbox\" class=\"history-select\" value=\"${item.id}\"></td>
                     <td>${item.date}</td>
-                    <td>${item.export_type_name || item.export_type}</td>
+                    <td>${item.export_type_name || item.export_name || item.export_type}</td>
                     <td><span class="wc-s3-status ${triggerClass}">${triggerText}</span></td>
                     <td>${item.file_name}</td>
                     <td><span class="wc-s3-status ${statusClass}">${statusText}</span></td>
