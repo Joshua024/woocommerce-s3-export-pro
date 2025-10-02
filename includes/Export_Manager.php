@@ -63,6 +63,7 @@ class Export_Manager {
         add_action('wp_ajax_wc_s3_save_export_settings', array($this, 'ajax_save_export_settings'));
         add_action('wp_ajax_wc_s3_save_export_types', array($this, 'ajax_save_export_types'));
         add_action('wp_ajax_wc_s3_save_export_types_config', array($this, 'ajax_save_export_types_config'));
+        add_action('wp_ajax_wc_s3_save_source_website_config', array($this, 'ajax_save_source_website_config'));
         add_action('wp_ajax_wc_s3_add_export_type', array($this, 'ajax_add_export_type'));
         add_action('wp_ajax_wc_s3_remove_export_type', array($this, 'ajax_remove_export_type'));
         add_action('wp_ajax_wc_s3_setup_automation', array($this, 'ajax_setup_automation'));
@@ -657,6 +658,36 @@ class Export_Manager {
             wp_send_json_success(array('message' => 'Export types configuration saved successfully'));
         } else {
             wp_send_json_error(array('message' => 'Failed to save export types configuration'));
+        }
+    }
+    
+    /**
+     * AJAX: Save source website configuration
+     */
+    public function ajax_save_source_website_config() {
+        check_ajax_referer('wc_s3_export_pro_nonce', 'nonce');
+        
+        if (!current_user_can('manage_woocommerce')) {
+            wp_die(__('Insufficient permissions', 'wc-s3-export-pro'));
+        }
+        
+        error_log('WC S3 Export Pro: ajax_save_source_website_config called!');
+        error_log('WC S3 Export Pro: POST data: ' . print_r($_POST, true));
+        
+        // Get the raw data
+        $source_website_config = isset($_POST['source_website_config']) ? $_POST['source_website_config'] : array();
+        
+        error_log('WC S3 Export Pro: Source website config to save: ' . print_r($source_website_config, true));
+        
+        // Save using Settings class method which handles sanitization
+        $result = $this->settings->update_source_website_config($source_website_config);
+        
+        error_log('WC S3 Export Pro: Save result: ' . ($result ? 'SUCCESS' : 'FAILED'));
+        
+        if ($result) {
+            wp_send_json_success(array('message' => 'Source website configuration saved successfully'));
+        } else {
+            wp_send_json_error(array('message' => 'Failed to save source website configuration'));
         }
     }
     

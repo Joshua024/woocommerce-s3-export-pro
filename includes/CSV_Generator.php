@@ -14,6 +14,11 @@ class CSV_Generator {
     private $settings;
     
     /**
+     * Current export type being processed
+     */
+    private $current_export_type = null;
+    
+    /**
      * Constructor
      */
     public function __construct() {
@@ -47,6 +52,9 @@ class CSV_Generator {
      * Generate CSV file for export type
      */
     public function generate_csv($export_type, $date_param = null) {
+        // Store the current export type for use in other methods
+        $this->current_export_type = $export_type;
+        
         // Make it resilient to long runs
         if (function_exists('set_time_limit')) {
             @set_time_limit(0);
@@ -1081,6 +1089,18 @@ class CSV_Generator {
      * Get source website URL for Salesforce integration
      */
     private function get_source_website() {
+        // First, check if there's a configuration for the current export type
+        if ($this->current_export_type && isset($this->current_export_type['name'])) {
+            $export_type_name = $this->current_export_type['name'];
+            $configured_value = $this->settings->get_source_website_for_export_type($export_type_name);
+            
+            // If configured and enabled, use the configured value
+            if ($configured_value !== null) {
+                return $configured_value;
+            }
+        }
+        
+        // Fall back to site URL logic
         // Get the site URL from WordPress
         $site_url = get_site_url();
         

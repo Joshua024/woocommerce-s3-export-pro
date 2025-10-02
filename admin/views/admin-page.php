@@ -834,6 +834,108 @@ function get_data_source_options($export_type, $selected_value = '') {
         </form>
     </div>
 
+    <!-- Source Website Configuration -->
+    <div class="wc-s3-form">
+        <h3>🌐 Source Website Configuration</h3>
+        <p class="description">
+            Configure the "Source Website" field for each export type. This is useful for Salesforce integration or when you need to identify the source of your data.
+            You can enable/disable this field per export type and optionally specify a custom value (e.g., "Funds Online" instead of the full URL).
+        </p>
+        
+        <form id="source-website-config-form" method="post" action="">
+            <?php wp_nonce_field('wc_s3_export_pro_source_website_config', 'wc_s3_export_pro_source_website_config_nonce'); ?>
+            
+            <div id="source-website-types-list">
+                <?php
+                $export_types = $settings->get_export_types_config();
+                $source_website_config = $settings->get_source_website_config();
+                
+                if (!empty($export_types)):
+                    foreach ($export_types as $export_type):
+                        $type_name = $export_type['name'];
+                        // Use sanitized key to look up config (sanitize_key converts to lowercase)
+                        $sanitized_key = sanitize_key($type_name);
+                        $config = isset($source_website_config[$sanitized_key]) ? $source_website_config[$sanitized_key] : array(
+                            'enabled' => false,
+                            'use_custom' => false,
+                            'value' => ''
+                        );
+                        $enabled = !empty($config['enabled']);
+                        $use_custom = !empty($config['use_custom']);
+                        $custom_value = isset($config['value']) ? $config['value'] : '';
+                ?>
+                <div class="wc-s3-source-website-item">
+                    <div class="wc-s3-field-group">
+                        <h4><?php echo esc_html($type_name); ?></h4>
+                        
+                        <div class="wc-s3-checkbox-group">
+                            <label>
+                                <input type="checkbox" 
+                                       name="source_website_config[<?php echo esc_attr($type_name); ?>][enabled]" 
+                                       value="1" 
+                                       <?php checked($enabled, true); ?>
+                                       class="source-website-enable-toggle"
+                                       data-export-type="<?php echo esc_attr($type_name); ?>">
+                                <span>Enable Source Website field for this export type</span>
+                            </label>
+                        </div>
+                        
+                        <div class="source-website-options" id="source-website-options-<?php echo esc_attr($type_name); ?>" style="<?php echo $enabled ? '' : 'display:none;'; ?>">
+                            <div class="wc-s3-checkbox-group">
+                                <label>
+                                    <input type="checkbox" 
+                                           name="source_website_config[<?php echo esc_attr($type_name); ?>][use_custom]" 
+                                           value="1" 
+                                           <?php checked($use_custom, true); ?>
+                                           class="source-website-custom-toggle"
+                                           data-export-type="<?php echo esc_attr($type_name); ?>">
+                                    <span>Use custom value instead of site URL</span>
+                                </label>
+                            </div>
+                            
+                            <div class="source-website-custom-value" id="source-website-custom-<?php echo esc_attr($type_name); ?>" style="<?php echo $use_custom ? '' : 'display:none;'; ?>">
+                                <div class="wc-s3-field">
+                                    <label for="source_website_value_<?php echo esc_attr($type_name); ?>">Custom Source Website Value</label>
+                                    <input type="text" 
+                                           id="source_website_value_<?php echo esc_attr($type_name); ?>"
+                                           name="source_website_config[<?php echo esc_attr($type_name); ?>][value]" 
+                                           value="<?php echo esc_attr($custom_value); ?>"
+                                           placeholder="e.g., Funds Online, https://example.com, etc.">
+                                    <p class="description">Enter a custom value or URL to use as the source website. Leave empty to use the WordPress site URL.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="wc-s3-info-box">
+                                <strong>Current behavior:</strong><br>
+                                <?php if (!$enabled): ?>
+                                    ❌ Source Website field will NOT be included in exports
+                                <?php elseif ($use_custom && !empty($custom_value)): ?>
+                                    ✅ Will use: <code><?php echo esc_html($custom_value); ?></code>
+                                <?php else: ?>
+                                    ✅ Will use site URL: <code><?php echo esc_html(get_site_url()); ?></code>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php 
+                    endforeach;
+                else:
+                ?>
+                <div class="wc-s3-info-box">
+                    <p>No export types configured yet. Add export types in the Export Types Configuration section above first.</p>
+                </div>
+                <?php endif; ?>
+            </div>
+            
+            <div class="wc-s3-export-type-actions">
+                <button type="submit" class="wc-s3-btn primary">
+                    💾 Save Source Website Configuration
+                </button>
+            </div>
+        </form>
+    </div>
+
     <!-- Recent Activity -->
     <div class="wc-s3-form">
         <h3>📈 Recent Activity</h3>
@@ -1253,6 +1355,58 @@ document.getElementById('export-settings-form').addEventListener('submit', funct
     })
     .catch(error => {
         showNotification('error', 'Save failed: ' + error.message);
+    });
+});
+
+// Source Website Configuration - needs to be inside DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Source Website Configuration Form
+    const sourceWebsiteForm = document.getElementById('source-website-config-form');
+    if (sourceWebsiteForm) {
+        sourceWebsiteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            formData.append('action', 'wc_s3_save_source_website_config');
+            formData.append('nonce', wcS3ExportPro.nonce);
+            
+            fetch(wcS3ExportPro.ajaxUrl, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                showNotification(data.success ? 'success' : 'error', data.data ? data.data.message : data.message);
+                if (data.success) {
+                    setTimeout(() => location.reload(), 2000);
+                }
+            })
+            .catch(error => {
+                showNotification('error', 'Save failed: ' + error.message);
+            });
+        });
+    }
+    
+    // Handle enable toggle
+    document.querySelectorAll('.source-website-enable-toggle').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const exportType = this.getAttribute('data-export-type');
+            const optionsDiv = document.getElementById('source-website-options-' + exportType);
+            if (optionsDiv) {
+                optionsDiv.style.display = this.checked ? '' : 'none';
+            }
+        });
+    });
+    
+    // Handle custom value toggle
+    document.querySelectorAll('.source-website-custom-toggle').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const exportType = this.getAttribute('data-export-type');
+            const customDiv = document.getElementById('source-website-custom-' + exportType);
+            if (customDiv) {
+                customDiv.style.display = this.checked ? '' : 'none';
+            }
+        });
     });
 });
 

@@ -24,6 +24,11 @@ class Settings {
     const EXPORT_TYPES_OPTION = 'wc_s3_export_pro_export_types';
     
     /**
+     * Source website configuration option name
+     */
+    const SOURCE_WEBSITE_CONFIG_OPTION = 'wc_s3_export_pro_source_website_config';
+    
+    /**
      * Available export type templates
      */
     const EXPORT_TYPE_TEMPLATES = [
@@ -676,8 +681,118 @@ class Settings {
             \WP_CLI::success('S3 configuration saved successfully.');
         } else {
             \WP_CLI::error('Failed to save S3 configuration.');
+                }
+    }
+    
+    /**
+     * Get source website configuration
+     * 
+     * @return array Source website configuration for all export types
+     */
+    public function get_source_website_config() {
+        $config = get_option(self::SOURCE_WEBSITE_CONFIG_OPTION, array());
+        
+        // Ensure config is an array
+        if (!is_array($config)) {
+            $config = array();
         }
+        
+        return $config;
+    }
+    
+    /**
+     * Update source website configuration
+     * 
+     * @param array $config Source website configuration
+     * @return bool Success status
+     */
+    public function update_source_website_config($config) {
+        error_log('WC S3 Export Pro: update_source_website_config called with: ' . print_r($config, true));
+        
+        if (!is_array($config)) {
+            error_log('WC S3 Export Pro: Config is not an array');
+            return false;
+        }
+        
+        // Sanitize the configuration
+        $sanitized_config = $this->sanitize_source_website_config($config);
+        error_log('WC S3 Export Pro: Sanitized config: ' . print_r($sanitized_config, true));
+        
+        // Get current value to check if it's different
+        $current_value = get_option(self::SOURCE_WEBSITE_CONFIG_OPTION, array());
+        
+        // update_option returns false if the value is unchanged
+        // We need to treat "unchanged" as success
+        $result = update_option(self::SOURCE_WEBSITE_CONFIG_OPTION, $sanitized_config);
+        
+        // If update_option returns false, check if it's because the value is the same
+        if (!$result) {
+            $saved_value = get_option(self::SOURCE_WEBSITE_CONFIG_OPTION, array());
+            // If the saved value matches what we wanted to save, consider it a success
+            if (serialize($saved_value) === serialize($sanitized_config)) {
+                error_log('WC S3 Export Pro: Value unchanged, treating as success');
+                return true;
+            }
+            error_log('WC S3 Export Pro: update_option failed - value mismatch');
+            return false;
+        }
+        
+        error_log('WC S3 Export Pro: update_option result: TRUE');
+        return true;
+    }
+    
+    /**
+     * Sanitize source website configuration
+     * 
+     * @param array $config Raw configuration data
+     * @return array Sanitized configuration
+     */
+    private function sanitize_source_website_config($config) {
+        $sanitized = array();
+        
+        if (!is_array($config)) {
+            return $sanitized;
+        }
+        
+        foreach ($config as $export_type => $settings) {
+            if (!is_array($settings)) {
+                continue;
+            }
+            
+            $sanitized[sanitize_key($export_type)] = array(
+                'enabled' => !empty($settings['enabled']),
+                'value' => isset($settings['value']) ? sanitize_text_field($settings['value']) : '',
+                'use_custom' => !empty($settings['use_custom'])
+            );
+        }
+        
+        return $sanitized;
+    }
+    
+    /**
+     * Get source website value for a specific export type
+     * 
+     * @param string $export_type Export type identifier
+     * @return string|null Source website value or null if not configured
+     */
+    public function get_source_website_for_export_type($export_type) {
+        $config = $this->get_source_website_config();
+        
+        // Sanitize the export type key to match the saved format
+        $sanitized_key = sanitize_key($export_type);
+        
+        // Check if this export type has source website enabled
+        if (!isset($config[$sanitized_key]) || empty($config[$sanitized_key]['enabled'])) {
+            return null;
+        }
+        
+        // Check if using custom value
+        if (!empty($config[$sanitized_key]['use_custom']) && !empty($config[$sanitized_key]['value'])) {
+            return $config[$sanitized_key]['value'];
+        }
+        
+        // Return site URL as default
+        return get_site_url();
     }
 } 
-
 
