@@ -91,8 +91,7 @@ class Settings {
             'tax_items' => 'tax_items',
             'coupon_items' => 'coupon_items',
             'refunds' => 'refunds',
-            'order_notes' => 'order_notes',
-            'source_website' => 'source_website'
+            'order_notes' => 'order_notes'
         ],
         'order_items' => [
             'order_id' => 'order_id',

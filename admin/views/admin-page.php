@@ -80,7 +80,6 @@ function get_data_source_options($export_type, $selected_value = '') {
                 'shipping_country' => 'shipping_country',
                 'shipping_company' => 'shipping_company',
                 'customer_note' => 'customer_note',
-                'source_website' => 'source_website',
                 'item_id' => 'item_id',
                 'item_product_id' => 'item_product_id',
                 'item_name' => 'item_name',
