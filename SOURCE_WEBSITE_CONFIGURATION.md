@@ -106,6 +106,17 @@ Result: source_website field will NOT be included in exports
 - `get_source_website()` - Now checks configuration first before falling back to site URL
   - If configured and enabled: uses custom value or site URL per configuration
   - If not configured: uses site URL (backward compatible)
+- `create_csv_file()` - **Automatically injects Source Website field as the LAST column**
+  - Checks if Source Website is configured for the export type
+  - Adds `source_website` to field mappings and headers arrays
+  - Detects and removes any incorrect "Source Website" field mappings
+  - Ensures proper column alignment in CSV output
+
+**Key Behavior:**
+- ✅ Source Website field is **automatically added** to CSV exports when configured
+- ✅ **No need to include it in field mappings** - handled automatically by the system
+- ✅ Always appears as the **LAST column** in the CSV file
+- ✅ Prevents duplicate or misplaced Source Website columns
 
 ### 3. `includes/Export_Manager.php`
 **Added:**
@@ -177,11 +188,42 @@ Result: source_website field will NOT be included in exports
 
 ## Support & Troubleshooting
 
+### ⚠️ Important: Do NOT Add Source Website to Field Mappings
+
+**The Source Website field is automatically injected** into CSV exports when configured in the Source Website Configuration section. You should **NOT** manually add it to field mappings.
+
+**Why?**
+- The system automatically adds Source Website as the last column
+- Manual field mapping will cause duplicate columns
+- Manual mapping may use incorrect data source
+
+**Correct Workflow:**
+1. ✅ Configure Source Website in the "Source Website Configuration" section
+2. ✅ Enable it for the export types you need
+3. ✅ Set custom value if needed
+4. ❌ **DO NOT** add `source_website` to Field Mappings Configuration
+
 ### Issue: Source website field not appearing
 **Solution:** Check that:
-1. Export type has source website enabled in configuration
-2. Field mapping includes `source_website` field
+1. Export type has source website **enabled** in the "Source Website Configuration" section
+2. ~~Field mapping includes `source_website` field~~ ← **NOT NEEDED - Auto-injected**
 3. Export type configuration was saved successfully
+4. Run a new export (old exports won't be updated)
+
+### Issue: Duplicate "Source Website" columns
+**Solution:**
+1. Check Field Mappings Configuration for any manual `source_website` entries
+2. Remove any manual Source Website field mappings
+3. The system will automatically add it as the last column
+4. Run fresh export to verify
+
+### Issue: Source Website showing wrong data (e.g., order IDs)
+**Solution:**
+1. This happens when there's an incorrect field mapping (e.g., `order_id` → `Source Website`)
+2. Edit the export type Field Mappings
+3. Remove or fix the incorrect mapping
+4. Let the system auto-inject the correct Source Website field
+5. Run fresh export to verify
 
 ### Issue: Custom value not being used
 **Solution:** Verify:
@@ -207,8 +249,20 @@ Potential improvements for future versions:
 
 ## Version History
 
-**v2.0.4** (Current Implementation)
+**v2.1.0** (Current Implementation)
 - Added per-export-type source website configuration
+- Auto-injection of Source Website field as last column
+- Removed source_website from default field mappings and data sources
+- Fixed duplicate Source Website column issues
+- Added proper column alignment handling
+- Updated Export History to show human-readable export type names
+
+**Features:**
+- Source Website Configuration admin UI section
+- Enable/disable per export type
+- Custom value support (e.g., "Funds Online")
+- Automatic field injection (no manual field mapping needed)
+- Proper handling of incorrect/duplicate mappings
 - Added admin UI for configuration management
 - Added AJAX handlers for saving configuration
 - Updated CSV generator to use configuration
