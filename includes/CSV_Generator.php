@@ -602,6 +602,56 @@ class CSV_Generator {
         
         $this->log("[$timestamp] Converted field mappings: " . print_r($converted_field_mappings, true), $log_file);
         
+        // Check if Source Website should be included (from Source Website Configuration)
+        $source_website_value = $this->get_source_website();
+        $include_source_website = false;
+        
+        if ($source_website_value !== null) {
+            // Check if it's configured for this export type
+            if (isset($export_type['name'])) {
+                $export_type_name = $export_type['name'];
+                $configured_value = $this->settings->get_source_website_for_export_type($export_type_name);
+                if ($configured_value !== null) {
+                    $include_source_website = true;
+                    $this->log("[$timestamp] Source Website enabled for export type: $export_type_name with value: $configured_value", $log_file);
+                }
+            }
+        }
+        
+        // Add source_website to field mappings if configured but not already present
+        if ($include_source_website && !isset($converted_field_mappings['source_website'])) {
+            // Check if "Source Website" column name already exists (from incorrect field mapping)
+            $source_website_column_exists = in_array('Source Website', $converted_field_mappings);
+            
+            if (!$source_website_column_exists) {
+                // Add to the END of both arrays to keep them aligned
+                $converted_field_mappings['source_website'] = 'Source Website';
+                $headers[] = 'Source Website';
+                $this->log("[$timestamp] Source Website field automatically added to CSV at the end", $log_file);
+            } else {
+                $this->log("[$timestamp] Source Website column already exists in field mappings, skipping auto-add", $log_file);
+                // Replace the incorrect mapping with the correct source_website mapping
+                // Find which key maps to "Source Website" and replace it
+                foreach ($converted_field_mappings as $key => $value) {
+                    if ($value === 'Source Website' && $key !== 'source_website') {
+                        $this->log("[$timestamp] Found incorrect mapping: $key => Source Website, will be replaced", $log_file);
+                        unset($converted_field_mappings[$key]);
+                        // Remove from headers too
+                        $header_index = array_search('Source Website', $headers);
+                        if ($header_index !== false) {
+                            unset($headers[$header_index]);
+                            $headers = array_values($headers); // Re-index array
+                        }
+                        break;
+                    }
+                }
+                // Now add the correct mapping at the END
+                $converted_field_mappings['source_website'] = 'Source Website';
+                $headers[] = 'Source Website';
+                $this->log("[$timestamp] Corrected Source Website field mapping at the end", $log_file);
+            }
+        }
+        
         // Write headers
         fputcsv($file_handle, $headers);
         

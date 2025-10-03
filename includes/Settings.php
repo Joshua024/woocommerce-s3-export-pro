@@ -46,7 +46,7 @@ class Settings {
     const DEFAULT_FIELD_MAPPINGS = [
         'orders' => [
             'order_id' => 'order_id',
-            'date' => 'date',
+            'date' => 'order_date',
             'status' => 'status',
             'worldpay_transaction_id' => 'worldpay_transaction_id',
             'shipping_total' => 'shipping_total',

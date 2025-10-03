@@ -2013,7 +2013,7 @@ function getDefaultFields(exportType) {
     const fields = {
         'orders': [
             { key: 'order_id', label: 'order_id' },
-            { key: 'date', label: 'date' },
+            { key: 'order_date', label: 'order' },
             { key: 'status', label: 'status' },
             { key: 'worldpay_transaction_id', label: 'worldpay_transaction_id' },
             { key: 'shipping_total', label: 'shipping_total' },
