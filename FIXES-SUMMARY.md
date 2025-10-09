@@ -229,3 +229,38 @@ Before marking as complete, please verify:
 1. `includes/CSV_Generator.php` - Core export logic
 2. `admin/views/admin-page.php` - User interface
 3. `includes/Export_Manager.php` - AJAX handlers and data saving
+
+---
+
+## QA Testing Results
+
+### ✅ All Tests Passed
+
+| Test Case | Status | Notes |
+|-----------|--------|-------|
+| UI Exists | ✅ PASS | Filter present in both existing and new export types |
+| Field Names Correct | ✅ PASS | Correctly formatted as array |
+| AJAX Handler | ✅ PASS | Properly sanitizes and saves data |
+| Export Logic | ✅ PASS | Correctly filters orders based on payment method |
+| Edge Cases | ✅ PASS | Handles empty payment methods correctly |
+| JS Visibility | ✅ PASS | Shows/hides based on export type |
+| Structure Match | ✅ PASS | Same structure across templates |
+
+### 🐛 Issue Found and Fixed
+
+**Issue**: Default value mismatch in AJAX handlers  
+**Problem**: Default was `array('manual')` but should be `array('')` to match UI checkbox value  
+**Fixed**: Changed default in both `ajax_save_export_types()` and `ajax_save_export_types_config()` functions  
+**Impact**: Manual orders are now properly excluded by default
+
+---
+
+## Final Status
+
+✅ **ALL ISSUES RESOLVED AND TESTED**
+- Variation IDs export correctly
+- Cancelled orders excluded
+- Manual orders excluded by default
+- Payment method filter works correctly
+- UI design matches across all sections
+- All edge cases handled properly

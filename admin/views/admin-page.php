@@ -1544,7 +1544,7 @@ function addExportType() {
                         </div>
                         <div class="wc-s3-status-grid">
                             <label class="wc-s3-checkbox">
-                                <input type="checkbox" name="export_types[${newIndex}][excluded_payment_methods][]" value="" checked class="wc-s3-payment-method-checkbox" data-export-index="${newIndex}">
+                                <input type="checkbox" name="export_types[${newIndex}][excluded_payment_methods][]" value="" class="wc-s3-payment-method-checkbox" data-export-index="${newIndex}">
                                 <span class="checkmark"></span>
                                 <strong>No Payment Method (Manual Orders)</strong>
                             </label>
