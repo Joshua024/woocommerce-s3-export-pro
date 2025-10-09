@@ -570,6 +570,7 @@ class Export_Manager {
                         'file_prefix' => sanitize_text_field($type['file_prefix'] ?? ''),
                         'description' => sanitize_textarea_field($type['description'] ?? ''),
                         'statuses' => isset($type['statuses']) && is_array($type['statuses']) ? array_map('sanitize_text_field', $type['statuses']) : array(),
+                        'excluded_payment_methods' => isset($type['excluded_payment_methods']) && is_array($type['excluded_payment_methods']) ? array_map('sanitize_text_field', $type['excluded_payment_methods']) : array('manual'),
                         'field_mappings' => $field_mappings
                     );
                 }
@@ -639,6 +640,7 @@ class Export_Manager {
                         'file_prefix' => sanitize_text_field($type['file_prefix'] ?? ''),
                         'description' => sanitize_textarea_field($type['description'] ?? ''),
                         'statuses' => isset($type['statuses']) && is_array($type['statuses']) ? array_map('sanitize_text_field', $type['statuses']) : array(),
+                        'excluded_payment_methods' => isset($type['excluded_payment_methods']) && is_array($type['excluded_payment_methods']) ? array_map('sanitize_text_field', $type['excluded_payment_methods']) : array('manual'),
                         'field_mappings' => $field_mappings
                     );
                 }

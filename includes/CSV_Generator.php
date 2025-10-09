@@ -209,6 +209,25 @@ class CSV_Generator {
                     continue;
                 }
                 
+                // Skip cancelled orders
+                $order_status = $order->get_status();
+                if (in_array($order_status, ['cancelled', 'wc-cancelled'])) {
+                    $this->log("[$timestamp] Skipping cancelled order ID: {$order_id} with status: {$order_status}", $log_file);
+                    continue;
+                }
+                
+                // Skip manual payment method orders if configured to exclude
+                $payment_method = $order->get_payment_method();
+                $excluded_payment_methods = isset($export_type['excluded_payment_methods']) ? $export_type['excluded_payment_methods'] : array();
+                
+                // Check if payment method is in excluded list
+                // Empty string in excluded list means exclude orders with no payment method (manual orders)
+                if (in_array($payment_method, $excluded_payment_methods) || 
+                    (empty($payment_method) && in_array('', $excluded_payment_methods))) {
+                    $this->log("[$timestamp] Skipping order ID: {$order_id} with excluded payment method: " . ($payment_method ?: 'none/manual'), $log_file);
+                    continue;
+                }
+                
                 // Get order-level data with error handling
                 try {
                     $order_data = array(
@@ -304,7 +323,8 @@ class CSV_Generator {
                             $product = $product_id ? wc_get_product($product_id) : null;
                             
                             $item_data['item_id'] = $item_id;
-                            $item_data['item_product_id'] = $product_id;
+                            // Use variation ID if available (for variable products), otherwise use product ID
+                            $item_data['item_product_id'] = $variation_id > 0 ? $variation_id : $product_id;
                             $item_data['item_name'] = $item->get_name();
                             $item_data['item_sku'] = $product ? $product->get_sku() : '';
                             $item_data['item_quantity'] = $item->get_quantity();

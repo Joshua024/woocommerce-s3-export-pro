@@ -673,6 +673,42 @@ function get_data_source_options($export_type, $selected_value = '') {
                                     <p class="description">Orders with these statuses will be included. Leave all unchecked to include all statuses.</p>
                                 </div>
                             </div>
+                            
+                            <div class="wc-s3-form-group order-payment-methods-field" id="excluded_payment_methods_<?php echo $index; ?>_container" style="<?php echo ($export_type['type'] ?? 'orders') === 'orders' ? '' : 'display: none;'; ?>">
+                                <label>Excluded Payment Methods</label>
+                                <div class="wc-s3-status-checkboxes">
+                                    <div class="wc-s3-status-header">
+                                        <small>Select payment methods to exclude from export:</small>
+                                    </div>
+                                    <div class="wc-s3-status-grid">
+                                        <?php
+                                        // Get all available payment gateways
+                                        $payment_gateways = WC()->payment_gateways->payment_gateways();
+                                        $excluded_payment_methods = $export_type['excluded_payment_methods'] ?? array();
+                                        
+                                        // Add option for "No Payment Method" (manually created orders)
+                                        $checked = in_array('', $excluded_payment_methods) || in_array('none', $excluded_payment_methods) ? 'checked' : '';
+                                        echo '<label class="wc-s3-checkbox">';
+                                        echo '<input type="checkbox" name="export_types[' . $index . '][excluded_payment_methods][]" value="" ' . $checked . ' class="wc-s3-payment-method-checkbox" data-export-index="' . $index . '">';
+                                        echo '<span class="checkmark"></span>';
+                                        echo '<strong>No Payment Method (Manual Orders)</strong>';
+                                        echo '</label>';
+                                        
+                                        foreach ($payment_gateways as $gateway) {
+                                            $gateway_id = $gateway->id;
+                                            $gateway_title = $gateway->get_title();
+                                            $checked = in_array($gateway_id, $excluded_payment_methods) ? 'checked' : '';
+                                            echo '<label class="wc-s3-checkbox">';
+                                            echo '<input type="checkbox" name="export_types[' . $index . '][excluded_payment_methods][]" value="' . esc_attr($gateway_id) . '" ' . $checked . ' class="wc-s3-payment-method-checkbox" data-export-index="' . $index . '">';
+                                            echo '<span class="checkmark"></span>';
+                                            echo esc_html($gateway_title) . ' (' . esc_html($gateway_id) . ')';
+                                            echo '</label>';
+                                        }
+                                        ?>
+                                    </div>
+                                    <p class="description">Orders with these payment methods will be excluded from export. <strong>"No Payment Method" refers to manually created orders without a payment gateway.</strong></p>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="wc-s3-form-row">
@@ -1499,6 +1535,33 @@ function addExportType() {
                         <p class="description">Orders with these statuses will be included. Leave all unchecked to include all statuses.</p>
                     </div>
                 </div>
+                
+                <div class="wc-s3-form-group order-payment-methods-field" id="excluded_payment_methods_${newIndex}_container">
+                    <label>Excluded Payment Methods</label>
+                    <div class="wc-s3-status-checkboxes">
+                        <div class="wc-s3-status-header">
+                            <small>Select payment methods to exclude from export:</small>
+                        </div>
+                        <div class="wc-s3-status-grid">
+                            <label class="wc-s3-checkbox">
+                                <input type="checkbox" name="export_types[${newIndex}][excluded_payment_methods][]" value="" checked class="wc-s3-payment-method-checkbox" data-export-index="${newIndex}">
+                                <span class="checkmark"></span>
+                                <strong>No Payment Method (Manual Orders)</strong>
+                            </label>
+                            <?php
+                            $available_gateways = WC()->payment_gateways->payment_gateways();
+                            foreach ($available_gateways as $gateway) {
+                                echo '<label class="wc-s3-checkbox">';
+                                echo '<input type="checkbox" name="export_types[${newIndex}][excluded_payment_methods][]" value="' . esc_attr($gateway->id) . '" class="wc-s3-payment-method-checkbox" data-export-index="${newIndex}">';
+                                echo '<span class="checkmark"></span>';
+                                echo esc_html($gateway->get_title()) . ' (' . esc_html($gateway->id) . ')';
+                                echo '</label>';
+                            }
+                            ?>
+                        </div>
+                        <p class="description">Orders with these payment methods will be excluded from export. <strong>"No Payment Method" refers to manually created orders without a payment gateway.</strong></p>
+                    </div>
+                </div>
             </div>
             
             <div class="wc-s3-form-row">
@@ -2177,11 +2240,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const exportTypeSection = e.target.closest('.wc-s3-export-type-section');
             const index = exportTypeSection.dataset.index;
             const orderStatusesContainer = document.getElementById(`order_statuses_${index}_container`);
+            const paymentMethodsContainer = document.getElementById(`excluded_payment_methods_${index}_container`);
             
             if (e.target.value === 'orders') {
                 orderStatusesContainer.style.display = 'block';
+                if (paymentMethodsContainer) {
+                    paymentMethodsContainer.style.display = 'block';
+                }
             } else {
                 orderStatusesContainer.style.display = 'none';
+                if (paymentMethodsContainer) {
+                    paymentMethodsContainer.style.display = 'none';
+                }
             }
         }
     });
